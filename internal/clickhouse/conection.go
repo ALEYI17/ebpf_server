@@ -3,7 +3,9 @@ package clickhouse
 import (
 	"context"
 	"crypto/tls"
+	"ebpf_server/internal/grpc/pb"
 	"fmt"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -15,7 +17,7 @@ type Chconnection struct {
 
 func NewConnection(ctx context.Context) (*Chconnection, error) {
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{":9000"},
+		Addr: []string{"localhost:9000"},
 		Auth: clickhouse.Auth{
 			Database: "audit",
 			Username: "user",
@@ -26,11 +28,19 @@ func NewConnection(ctx context.Context) (*Chconnection, error) {
 				Name    string
 				Version string
 			}{
-				{Name: "an-example-go-client", Version: "0.1"},
+				{Name: "ebpf_server", Version: "0.1"},
 			},
 		},
+    Debug: true,
 		Debugf: func(format string, v ...interface{}) {
 			fmt.Printf(format, v)
+		},
+    DialTimeout:  time.Duration(10) * time.Second,
+    MaxOpenConns:     5,
+    MaxIdleConns:     5,
+    BlockBufferSize: 10,
+    Compression: &clickhouse.Compression{
+			Method: clickhouse.CompressionLZ4,
 		},
 		TLS: &tls.Config{
 			InsecureSkipVerify: true,
@@ -49,4 +59,16 @@ func NewConnection(ctx context.Context) (*Chconnection, error) {
 	}
 
 	return &Chconnection{conn: conn}, nil
+}
+
+func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent_ExecveEvent) error{
+  
+  query := fmt.Sprintf("INSERT INTO audit.tracing_events VALUES(%d,%d,%s,%s,%d,%d,%d,%d)",event.ExecveEvent.Pid,event.ExecveEvent.Uid,
+    event.ExecveEvent.Comm , event.ExecveEvent.Filename,event.ExecveEvent.TimestampNsExit,event.ExecveEvent.ReturnCode,event.ExecveEvent.TimestampNs,
+    event.ExecveEvent.LatencyNs)
+
+  if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{
+    return err
+  }
+  return nil
 }

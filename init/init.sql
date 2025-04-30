@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS audit.tracing_events (
   timestamp_ns_exit UInt64,
   return_code Int64,
   timestamp_ns UInt64,
-  latency_ns UInt64
+  latency_ns UInt64,
+  node_name String
 ) ENGINE = MergeTree()
 ORDER BY timestamp_ns;
