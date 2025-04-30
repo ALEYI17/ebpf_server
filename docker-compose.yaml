@@ -1,0 +1,21 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "8123:8123"   # HTTP interface (use with curl / browser / clients)
+      - "9000:9000"   # Native TCP interface (use with drivers and Go clients)
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./init:/docker-entrypoint-initdb.d
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      CLICKHOUSE_USER: user
+      CLICKHOUSE_PASSWORD: password
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:
