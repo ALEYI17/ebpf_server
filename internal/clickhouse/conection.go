@@ -61,11 +61,11 @@ func NewConnection(ctx context.Context) (*Chconnection, error) {
 	return &Chconnection{conn: conn}, nil
 }
 
-func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent_ExecveEvent) error{
+func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
   
-  query := fmt.Sprintf("INSERT INTO audit.tracing_events VALUES(%d,%d,%s,%s,%d,%d,%d,%d)",event.ExecveEvent.Pid,event.ExecveEvent.Uid,
-    event.ExecveEvent.Comm , event.ExecveEvent.Filename,event.ExecveEvent.TimestampNsExit,event.ExecveEvent.ReturnCode,event.ExecveEvent.TimestampNs,
-    event.ExecveEvent.LatencyNs)
+  query := fmt.Sprintf("INSERT INTO audit.tracing_events VALUES(%d,%d,%s,%s,%d,%d,%d,%d)",event.Pid,event.Uid,
+    event.Comm , event.Filename,event.TimestampNsExit,event.ReturnCode,event.TimestampNs,
+    event.LatencyNs)
 
   if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{
     return err
