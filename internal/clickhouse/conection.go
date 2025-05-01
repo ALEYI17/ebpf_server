@@ -2,9 +2,9 @@ package clickhouse
 
 import (
 	"context"
-	"crypto/tls"
 	"ebpf_server/internal/grpc/pb"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -42,9 +42,7 @@ func NewConnection(ctx context.Context) (*Chconnection, error) {
     Compression: &clickhouse.Compression{
 			Method: clickhouse.CompressionLZ4,
 		},
-		TLS: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+
 	})
 
 	if err != nil {
@@ -63,12 +61,29 @@ func NewConnection(ctx context.Context) (*Chconnection, error) {
 
 func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
   
-  query := fmt.Sprintf("INSERT INTO audit.tracing_events VALUES(%d,%d,%s,%s,%d,%d,%d,%d)",event.Pid,event.Uid,
-    event.Comm , event.Filename,event.TimestampNsExit,event.ReturnCode,event.TimestampNs,
-    event.LatencyNs)
+  query := fmt.Sprintf(
+		`INSERT INTO audit.tracing_events 
+		(pid, uid, comm, filename, timestamp_ns_exit, return_code, timestamp_ns, latency_ns, event_type, node_name) 
+		VALUES (%d, %d, '%s', '%s', %d, %d, %d, %d, '%s', '%s')`,
+		event.Pid,
+		event.Uid,
+		escapeSQLString(event.Comm),
+		escapeSQLString(event.Filename),
+		event.TimestampNsExit,
+		event.ReturnCode,
+		event.TimestampNs,
+		event.LatencyNs,
+		escapeSQLString(event.EventType),
+		escapeSQLString(event.NodeName),
+	)  
 
+  fmt.Print(query)
   if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{
     return err
   }
   return nil
+}
+
+func escapeSQLString(s string) string {
+	return strings.ReplaceAll(s, "'", "''") // escape single quotes
 }

@@ -18,7 +18,7 @@ func NewServer(conn *clickhouse.Chconnection) *Server{
   return &Server{ch: conn}
 }
 
-func RegisterGrpcServer(server *Server) *grpc.Server{
+func NewGrpcServer(server *Server) *grpc.Server{
   grpcserver := grpc.NewServer()
   
   pb.RegisterEventCollectorServer(grpcserver, server)
@@ -27,24 +27,24 @@ func RegisterGrpcServer(server *Server) *grpc.Server{
 }
 
 func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
-	log.Println("­ƒôÑ Receiving streamed events...")
+	log.Println(" Receiving streamed events...")
 
 	for {
 		event, err := stream.Recv()
 		if err == io.EOF {
-			log.Println("Ô£à Finished receiving all events.")
+			log.Println("Finished receiving all events.")
 			return stream.SendAndClose(&pb.CollectorAck{
 				Status:  "OK",
 				Message: "All events received successfully",
 			})
 		}
 		if err != nil {
-			log.Printf("ÔØî Error receiving event: %v", err)
+			log.Printf("Error receiving event: %v", err)
 			return err
 		}
 
-		log.Printf("­ƒôí Event from node %s | type=%s", event.NodeName, event.EventType)
-		log.Printf("­ƒöì Event: PID=%d UID=%d COMM=%s FILENAME=%s RET=%d TS=%d EXIT_TS=%d LAT=%d\n",
+		log.Printf("Event from node %s | type=%s", event.NodeName, event.EventType)
+		log.Printf("Event: PID=%d UID=%d COMM=%s FILENAME=%s RET=%d TS=%d EXIT_TS=%d LAT=%d\n",
 			event.Pid,
 			event.Uid,
 			event.Comm,
@@ -54,6 +54,10 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 			event.TimestampNsExit,
 			event.LatencyNs,
 		)
+    if err := s.ch.InsertTraceEvent(stream.Context(), event);err!=nil{
+      log.Printf("Error inserting data in clickhouse %s", err)
+      return err
+    }
 	}
 }
 
