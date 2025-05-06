@@ -43,17 +43,30 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 			return err
 		}
 
-		log.Printf("Event from node %s | type=%s", event.NodeName, event.EventType)
-		log.Printf("Event: PID=%d UID=%d COMM=%s FILENAME=%s RET=%d TS=%d EXIT_TS=%d LAT=%d\n",
+		log.Printf(
+			"Event from node=%s | type=%s\n"+
+				"  PID=%d UID=%d GID=%d PPID=%d User=%s\n"+
+				"  UserPID=%d UserPPID=%d\n"+
+				"  Comm=%s Filename=%s CgroupName=%s CgroupID=%d\n"+
+				"  Ret=%d Latency(ns)=%d StartTS=%d ExitTS=%d",
+			event.NodeName,
+			event.EventType,
 			event.Pid,
 			event.Uid,
+			event.Gid,
+			event.Ppid,
+			event.User,
+			event.UserPid,
+			event.UserPpid,
 			event.Comm,
 			event.Filename,
+			event.CgroupName,
+			event.CgroupId,
 			event.ReturnCode,
+			event.LatencyNs,
 			event.TimestampNs,
 			event.TimestampNsExit,
-			event.LatencyNs,
-		)
+		)    
     if err := s.ch.InsertTraceEvent(stream.Context(), event);err!=nil{
       log.Printf("Error inserting data in clickhouse %s", err)
       return err
