@@ -62,28 +62,31 @@ func NewConnection(ctx context.Context) (*Chconnection, error) {
 func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
   
   query := fmt.Sprintf(
-		`INSERT INTO audit.tracing_events 
-		(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
-		 timestamp_ns_exit, return_code, timestamp_ns, latency_ns, event_type, node_name) 
-		VALUES (%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', %d, %d, %d, %d, %d, '%s', '%s')`,
-		event.Pid,
-		event.Uid,
-		event.Gid,
-		event.Ppid,
-		escapeSQLString(event.User),
-		event.UserPid,
-		event.UserPpid,
-		escapeSQLString(event.Comm),
-		escapeSQLString(event.Filename),
-		escapeSQLString(event.CgroupName),
-		event.CgroupId,
-		event.TimestampNsExit,
-		event.ReturnCode,
-		event.TimestampNs,
-		event.LatencyNs,
-		escapeSQLString(event.EventType),
-		escapeSQLString(event.NodeName),
-	) 
+	`INSERT INTO audit.tracing_events 
+	(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
+	 timestamp_ns_exit, return_code, timestamp_ns, latency_ns, event_type, node_name, latency_ms) 
+	VALUES (
+		%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', %d,
+		%d, %d, %d, %d, '%s', '%s', %f)`,
+	event.Pid,
+	event.Uid,
+	event.Gid,
+	event.Ppid,
+	escapeSQLString(event.User),
+	event.UserPid,
+	event.UserPpid,
+	escapeSQLString(event.Comm),
+	escapeSQLString(event.Filename),
+	escapeSQLString(event.CgroupName),
+	event.CgroupId,
+	event.TimestampNsExit,
+	event.ReturnCode,
+	event.TimestampNs,
+	event.LatencyNs,
+	escapeSQLString(event.EventType),
+	escapeSQLString(event.NodeName),
+	float64(event.LatencyNs)/1_000_000.0,
+)
 
   fmt.Print(query)
   if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{

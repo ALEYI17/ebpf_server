@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS audit.tracing_events (
   latency_ns UInt64,
   event_type String,
   node_name String,
-  user String
-) ENGINE = MergeTree()
+  user String,
+  latency_ms Float64 
+)ENGINE = MergeTree()
 ORDER BY timestamp_ns;

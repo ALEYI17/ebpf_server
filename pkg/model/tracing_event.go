@@ -9,8 +9,13 @@ type EnrichedEvent struct {
 	// From gRPC message
 	PID             uint32 `json:"pid"`
 	UID             uint32 `json:"uid"`
+	GID             uint32 `json:"gid"`
 	User            string `json:"user"`
 	PPID            uint32 `json:"ppid"`
+	UserPID         uint32 `json:"user_pid"`
+	UserPPID        uint32 `json:"user_ppid"`
+	CgroupName      string `json:"cgroup_name"`
+	CgroupID        uint64 `json:"cgroup_id"`
 	Comm            string `json:"comm"`
 	Filename        string `json:"filename"`
 	TimestampNs     uint64 `json:"timestamp_ns"`
@@ -25,12 +30,18 @@ type EnrichedEvent struct {
 	ExitTimestampISO string  `json:"exit_timestamp_iso"`
 	LatencyMs        float64 `json:"latency_ms"`
 }
-func EnrichEvent(event *pb.EbpfEvent) *EnrichedEvent{
-  return &EnrichedEvent{
+
+func EnrichEvent(event *pb.EbpfEvent) *EnrichedEvent {
+	return &EnrichedEvent{
 		PID:             event.Pid,
 		UID:             event.Uid,
+		GID:             event.Gid,
 		User:            event.User,
 		PPID:            event.Ppid,
+		UserPID:         event.UserPid,
+		UserPPID:        event.UserPpid,
+		CgroupName:      event.CgroupName,
+		CgroupID:        event.CgroupId,
 		Comm:            event.Comm,
 		Filename:        event.Filename,
 		TimestampNs:     event.TimestampNs,
