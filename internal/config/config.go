@@ -12,7 +12,7 @@ type ServerConfig struct{
 
 func LoadServerConfig() *ServerConfig{
   return &ServerConfig{
-    Port:       getEnv("SERVER_PORT", "9090"),
+    Port:       getEnv("SERVER_PORT", "8080"),
     DBAddress:  getEnv("DB_ADDRESS", "localhost:9000"),
     DBUser:     getEnv("DB_USER", "user"),
     DBPassword: getEnv("DB_PASSWORD", "password"),
