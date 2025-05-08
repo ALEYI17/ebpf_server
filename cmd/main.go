@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"ebpf_server/internal/clickhouse"
+	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -16,21 +18,24 @@ func main() {
   ctx, cancel := context.WithCancel(context.Background())
   defer cancel()
 
-  
+  conf := config.LoadServerConfig()
 
-	lis, err := net.Listen("tcp", ":8080")
+  lis, err := net.Listen("tcp", fmt.Sprintf(":%s", conf.Port))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-  conn,err := clickhouse.NewConnection(ctx)
+  conn,err := clickhouse.NewConnection(ctx,conf)
+
   if err!=nil{
     log.Fatalf("Cannor create the clickhouse connection %s", err)
   }
   server  := grpc.NewServer(conn)
+
   grpcServer := grpc.NewGrpcServer(server)
 
   sigCh := make(chan os.Signal, 1)
+
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
   go func() {
@@ -41,6 +46,7 @@ func main() {
 	}()
 
 	log.Println("Server ready and listening")
+
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

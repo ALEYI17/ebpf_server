@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc/pb"
 	"fmt"
 	"strings"
@@ -15,13 +16,13 @@ type Chconnection struct {
 	conn driver.Conn
 }
 
-func NewConnection(ctx context.Context) (*Chconnection, error) {
+func NewConnection(ctx context.Context, conf *config.ServerConfig) (*Chconnection, error) {
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{"localhost:9000"},
+		Addr: []string{conf.DBAddress},
 		Auth: clickhouse.Auth{
-			Database: "audit",
-			Username: "user",
-			Password: "password",
+			Database: conf.DBName,
+			Username: conf.DBUser,
+			Password: conf.DBPassword,
 		},
 		ClientInfo: clickhouse.ClientInfo{
 			Products: []struct {
