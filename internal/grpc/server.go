@@ -3,9 +3,10 @@ package grpc
 import (
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/grpc/pb"
+	"ebpf_server/pkg/logutil"
 	"io"
-	"log"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -27,25 +28,26 @@ func NewGrpcServer(server *Server) *grpc.Server{
 }
 
 func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
-	log.Println(" Receiving streamed events...")
+  logger := logutil.GetLogger()
+	logger.Info("Receiving streamed events from client")
 
 	for {
 		event, err := stream.Recv()
 		if err == io.EOF {
-			log.Println("Finished receiving all events.")
+			logger.Info("Finished receiving all events")
 			return stream.SendAndClose(&pb.CollectorAck{
 				Status:  "OK",
 				Message: "All events received successfully",
 			})
 		}
 		if err != nil {
-			log.Printf("Error receiving event: %v", err)
+			logger.Error("Error receiving event from stream", zap.Error(err))
 			return err
 		}
 
 		   
     if err := s.ch.InsertTraceEvent(stream.Context(), event);err!=nil{
-      log.Printf("Error inserting data in clickhouse %s", err)
+      logger.Error("Failed to insert event into ClickHouse", zap.Error(err))
       return err
     }
 	}

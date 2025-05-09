@@ -5,30 +5,37 @@ import (
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc"
+	"ebpf_server/pkg/logutil"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"go.uber.org/zap"
 )
 
 func main() {
-	log.Println("Starting gRPC server on :8080...")
-  ctx, cancel := context.WithCancel(context.Background())
+
+  logutil.InitLogger()
+
+  logger := logutil.GetLogger()
+
+	ctx, cancel := context.WithCancel(context.Background())
   defer cancel()
 
   conf := config.LoadServerConfig()
 
+  logger.Info("Starting gRPC server", zap.String("port", conf.Port))
   lis, err := net.Listen("tcp", fmt.Sprintf(":%s", conf.Port))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatal("Failed to listen", zap.Error(err))
 	}
 
   conn,err := clickhouse.NewConnection(ctx,conf)
 
   if err!=nil{
-    log.Fatalf("Cannor create the clickhouse connection %s", err)
+    logger.Fatal("Cannot create the ClickHouse connection", zap.Error(err))
   }
   server  := grpc.NewServer(conn)
 
@@ -40,14 +47,14 @@ func main() {
 
   go func() {
 		sig := <-sigCh
-		log.Printf("Received signal: %s. Initiating graceful shutdown...", sig)
-		grpcServer.GracefulStop()
+		logger.Info("Received termination signal, initiating graceful shutdown", zap.String("signal", sig.String()))
+		grpcServer.Stop()
 		cancel()
 	}()
 
-	log.Println("Server ready and listening")
+	logger.Info("Server is ready and listening")
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+		logger.Fatal("Failed to serve", zap.Error(err))
 	}
 }

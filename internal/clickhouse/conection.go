@@ -4,12 +4,14 @@ import (
 	"context"
 	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc/pb"
+	"ebpf_server/pkg/logutil"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"go.uber.org/zap"
 )
 
 type Chconnection struct {
@@ -17,6 +19,7 @@ type Chconnection struct {
 }
 
 func NewConnection(ctx context.Context, conf *config.ServerConfig) (*Chconnection, error) {
+  logger := logutil.GetLogger()
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{conf.DBAddress},
 		Auth: clickhouse.Auth{
@@ -47,21 +50,27 @@ func NewConnection(ctx context.Context, conf *config.ServerConfig) (*Chconnectio
 	})
 
 	if err != nil {
+    logger.Error("Failed to open ClickHouse connection", zap.Error(err))
 		return nil, err
 	}
 
 	if err := conn.Ping(ctx); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
-			fmt.Printf("Exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+			logger.Error("ClickHouse exception during ping",
+				zap.Int32("code", exception.Code),
+				zap.String("message", exception.Message),
+				zap.String("stacktrace", exception.StackTrace),
+			)
 		}
 		return nil, err
 	}
-
+  logger.Info("Successfully connected to ClickHouse")
 	return &Chconnection{conn: conn}, nil
 }
 
 func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
   
+  logger := logutil.GetLogger()
   query := fmt.Sprintf(
 	`INSERT INTO audit.tracing_events 
 	(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
@@ -87,9 +96,10 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
 	escapeSQLString(event.EventType),
 	escapeSQLString(event.NodeName),
 	float64(event.LatencyNs)/1_000_000.0,
-)
-
-  fmt.Print(query)
+  )
+  
+  logger.Debug("Executing ClickHouse insert query", zap.String("query", query))
+  
   if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{
     return err
   }
