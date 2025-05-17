@@ -11,13 +11,16 @@ CREATE TABLE IF NOT EXISTS audit.tracing_events (
   cgroup_name String,
   comm String,
   filename String,
-  timestamp_ns UInt64,
-  timestamp_ns_exit UInt64,
+  monotonic_ts_enter_ns UInt64,
+  monotonic_ts_exit_ns UInt64,
   return_code Int64,
   latency_ns UInt64,
   event_type String,
   node_name String,
   user String,
-  latency_ms Float64 
+  latency_ms Float64, 
+  wall_time_ms Int64,
+  wall_time_dt DateTime
+
 )ENGINE = MergeTree()
-ORDER BY timestamp_ns;
+ORDER BY wall_time_ms;

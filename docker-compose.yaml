@@ -17,5 +17,21 @@ services:
       CLICKHOUSE_PASSWORD: password
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
+    depends_on:
+      - clickhouse
+    restart: unless-stopped
+
 volumes:
+  grafana_data:
   clickhouse_data:
