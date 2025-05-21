@@ -74,10 +74,11 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
   query := fmt.Sprintf(
 	`INSERT INTO audit.tracing_events 
 	(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
-	 monotonic_ts_exit_ns, return_code, monotonic_ts_enter_ns, latency_ns, event_type, node_name, latency_ms,wall_time_ms, wall_time_dt) 
+	 monotonic_ts_exit_ns, return_code, monotonic_ts_enter_ns, latency_ns, event_type, node_name, latency_ms,wall_time_ms, wall_time_dt,container_id,
+   container_image ) 
 	VALUES (
 		%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', %d,
-		%d, %d, %d, %d, '%s', '%s', %f,%d,fromUnixTimestamp(%d) )`,
+		%d, %d, %d, %d, '%s', '%s', %f,%d,fromUnixTimestamp(%d),'%s','%s' )`,
 	event.Pid,
 	event.Uid,
 	event.Gid,
@@ -98,6 +99,8 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
 	float64(event.LatencyNs)/1_000_000.0,
   event.TimestampUnixMs,
   event.TimestampUnixMs / 1000,
+  escapeSQLString(event.ContainerId),
+  escapeSQLString(event.ContainerImage),
   )
   
   logger.Debug("Executing ClickHouse insert query", zap.String("query", query))
