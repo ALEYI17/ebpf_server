@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS audit.tracing_events (
   user String,
   latency_ms Float64, 
   wall_time_ms Int64,
-  wall_time_dt DateTime,
+  wall_time_dt DateTime64(3),
   container_id String,
   container_image String,
   container_labels_json String

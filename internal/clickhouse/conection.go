@@ -78,7 +78,7 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
    container_image ,container_labels_json) 
 	VALUES (
 		%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', %d,
-		%d, %d, %d, %d, '%s', '%s', %f,%d,fromUnixTimestamp(%d),'%s','%s', '%s' )`,
+		%d, %d, %d, %d, '%s', '%s', %f,%d,toDateTime64(%f, 3),'%s','%s', '%s' )`,
 	event.Pid,
 	event.Uid,
 	event.Gid,
@@ -98,7 +98,7 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
 	escapeSQLString(event.NodeName),
 	float64(event.LatencyNs)/1_000_000.0,
   event.TimestampUnixMs,
-  event.TimestampUnixMs / 1000,
+  float64(event.TimestampUnixMs) / 1000,
   escapeSQLString(event.ContainerId),
   escapeSQLString(event.ContainerImage),
   escapeSQLString(event.ContainerLabelsJson),
