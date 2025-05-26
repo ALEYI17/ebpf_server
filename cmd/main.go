@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -33,11 +34,12 @@ func main() {
 	}
 
   conn,err := clickhouse.NewConnection(ctx,conf)
+  bi := clickhouse.NewBatchInserter(conn, 500, 10 * time.Second)
 
   if err!=nil{
     logger.Fatal("Cannot create the ClickHouse connection", zap.Error(err))
   }
-  server  := grpc.NewServer(conn)
+  server  := grpc.NewServer(bi)
 
   grpcServer := grpc.NewGrpcServer(server)
 

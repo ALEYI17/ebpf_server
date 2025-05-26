@@ -117,6 +117,71 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
   return nil
 }
 
+func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.EbpfEvent) error{
+  
+  logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+		INSERT INTO audit.tracing_events (
+			pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
+			monotonic_ts_exit_ns, return_code, monotonic_ts_enter_ns, latency_ns, event_type, node_name,
+			latency_ms, wall_time_ms, wall_time_dt, container_id, container_image, container_labels_json
+		)
+	`)
+	if err != nil {
+		logger.Error("Failed to prepare ClickHouse batch", zap.Error(err))
+		return err
+	}
+
+	for _, event := range events {
+		labelsJSON, err := json.Marshal(event.ContainerLabelsJson)
+		if err != nil {
+			logger.Warn("Could not marshal container labels", zap.Error(err))
+			labelsJSON = []byte("{}")
+		}
+
+    wallTime := time.Unix(0, int64(event.TimestampUnixMs)*int64(time.Millisecond))
+		err = batch.Append(
+			event.Pid,
+			event.Uid,
+			event.Gid,
+			event.Ppid,
+			event.User,
+			event.UserPid,
+			event.UserPpid,
+			event.Comm,
+			event.Filename,
+			event.CgroupName,
+			event.CgroupId,
+			event.TimestampNsExit,
+			event.ReturnCode,
+			event.TimestampNs,
+			event.LatencyNs,
+			event.EventType,
+			event.NodeName,
+			float64(event.LatencyNs)/1_000_000.0,
+			event.TimestampUnixMs,
+			wallTime, // wall_time_dt as DateTime64(3)
+			event.ContainerId,
+			event.ContainerImage,
+			string(labelsJSON),
+		)
+		if err != nil {
+			logger.Error("Failed to append row to batch", zap.Error(err))
+			return err
+		}
+	}
+
+	if err := batch.Send(); err != nil {
+		logger.Error("Failed to send ClickHouse batch", zap.Error(err))
+		return err
+	}
+
+	logger.Debug("Batch insert successful", zap.Int("events", len(events)))
+	return nil
+}
+
 func escapeSQLString(s string) string {
 	return strings.ReplaceAll(s, "'", "''") // escape single quotes
 }
+

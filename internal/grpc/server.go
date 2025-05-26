@@ -12,11 +12,11 @@ import (
 
 type Server struct {
 	pb.UnimplementedEventCollectorServer
-  ch *clickhouse.Chconnection
+  bi *clickhouse.BatchInserter
 }
 
-func NewServer(conn *clickhouse.Chconnection) *Server{
-  return &Server{ch: conn}
+func NewServer(bi *clickhouse.BatchInserter) *Server{
+  return &Server{bi: bi}
 }
 
 func NewGrpcServer(server *Server) *grpc.Server{
@@ -45,11 +45,8 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 			return err
 		}
 
-		   
-    if err := s.ch.InsertTraceEvent(stream.Context(), event);err!=nil{
-      logger.Error("Failed to insert event into ClickHouse", zap.Error(err))
-      return err
-    }
+    s.bi.Submit(event)
+
 	}
 }
 
