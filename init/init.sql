@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS audit.tracing_events (
   wall_time_dt DateTime64(3),
   container_id String,
   container_image String,
-  container_labels_json String
+  container_labels_json JSON
 
 )ENGINE = MergeTree()
 ORDER BY wall_time_ms;

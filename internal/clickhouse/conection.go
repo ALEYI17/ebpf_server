@@ -5,6 +5,7 @@ import (
 	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/pkg/logutil"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -69,8 +70,12 @@ func NewConnection(ctx context.Context, conf *config.ServerConfig) (*Chconnectio
 }
 
 func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
-  
-  logger := logutil.GetLogger()
+  logger := logutil.GetLogger()  
+  labelsJSON, err := json.Marshal(event.ContainerLabelsJson)
+  if err != nil {
+    logger.Warn("Could not marshal container labels", zap.Error(err))
+    labelsJSON = []byte("{}") // fallback to empty object
+  }
   query := fmt.Sprintf(
 	`INSERT INTO audit.tracing_events 
 	(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
@@ -101,7 +106,7 @@ func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent
   float64(event.TimestampUnixMs) / 1000,
   escapeSQLString(event.ContainerId),
   escapeSQLString(event.ContainerImage),
-  escapeSQLString(event.ContainerLabelsJson),
+  escapeSQLString(string(labelsJSON)),
   )
   
   logger.Debug("Executing ClickHouse insert query", zap.String("query", query))
