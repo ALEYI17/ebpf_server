@@ -34,11 +34,13 @@ func main() {
 	}
 
   conn,err := clickhouse.NewConnection(ctx,conf)
-  bi := clickhouse.NewBatchInserter(conn, 500, 10 * time.Second)
-
+  
   if err!=nil{
     logger.Fatal("Cannot create the ClickHouse connection", zap.Error(err))
   }
+
+  bi := clickhouse.NewBatchInserter(conn, conf.BatchSize, time.Duration(conf.BatchFlushMs)*time.Millisecond)
+
   server  := grpc.NewServer(bi)
 
   grpcServer := grpc.NewGrpcServer(server)

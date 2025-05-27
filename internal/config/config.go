@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 type ServerConfig struct{
   Port string
@@ -8,6 +11,8 @@ type ServerConfig struct{
   DBUser string
   DBPassword string
   DBName string
+  BatchSize int
+  BatchFlushMs int
 }
 
 func LoadServerConfig() *ServerConfig{
@@ -17,6 +22,8 @@ func LoadServerConfig() *ServerConfig{
     DBUser:     getEnv("DB_USER", "user"),
     DBPassword: getEnv("DB_PASSWORD", "password"),
     DBName:     getEnv("DB_NAME", "audit"),
+    BatchSize: getEnvAsInt("BATCH_MAX_SIZE", 1000),
+    BatchFlushMs: getEnvAsInt("BATCH_FLUSH_MS", 10000),
   }
 }
 
@@ -25,4 +32,13 @@ func getEnv(key, fallback string) string {
         return value
     }
     return fallback
+}
+
+func getEnvAsInt(name string, defaultVal int) int {
+  if valStr := os.Getenv(name); valStr != "" {
+    if val, err := strconv.Atoi(valStr); err == nil {
+      return val
+    }
+  }
+  return defaultVal
 }
