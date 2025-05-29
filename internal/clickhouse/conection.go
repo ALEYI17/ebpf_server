@@ -69,56 +69,87 @@ func NewConnection(ctx context.Context, conf *config.ServerConfig) (*Chconnectio
 	return &Chconnection{conn: conn}, nil
 }
 
-func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
-  logger := logutil.GetLogger()  
-  labelsJSON, err := json.Marshal(event.ContainerLabelsJson)
-  if err != nil {
-    logger.Warn("Could not marshal container labels", zap.Error(err))
-    labelsJSON = []byte("{}") // fallback to empty object
+// func (ch *Chconnection) InsertTraceEvent(ctx context.Context,event *pb.EbpfEvent) error{
+//   logger := logutil.GetLogger()  
+//   labelsJSON, err := json.Marshal(event.ContainerLabelsJson)
+//   if err != nil {
+//     logger.Warn("Could not marshal container labels", zap.Error(err))
+//     labelsJSON = []byte("{}") // fallback to empty object
+//   }
+//   query := fmt.Sprintf(
+// 	`INSERT INTO audit.tracing_events 
+// 	(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
+// 	 monotonic_ts_exit_ns, return_code, monotonic_ts_enter_ns, latency_ns, event_type, node_name, latency_ms,wall_time_ms, wall_time_dt,container_id,
+//    container_image ,container_labels_json) 
+// 	VALUES (
+// 		%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', %d,
+// 		%d, %d, %d, %d, '%s', '%s', %f,%d,toDateTime64(%f, 3),'%s','%s', '%s' )`,
+// 	event.Pid,
+// 	event.Uid,
+// 	event.Gid,
+// 	event.Ppid,
+// 	escapeSQLString(event.User),
+// 	event.UserPid,
+// 	event.UserPpid,
+// 	escapeSQLString(event.Comm),
+// 	escapeSQLString(event.Filename),
+// 	escapeSQLString(event.CgroupName),
+// 	event.CgroupId,
+// 	event.TimestampNsExit,
+// 	event.ReturnCode,
+// 	event.TimestampNs,
+// 	event.LatencyNs,
+// 	escapeSQLString(event.EventType),
+// 	escapeSQLString(event.NodeName),
+// 	float64(event.LatencyNs)/1_000_000.0,
+//   event.TimestampUnixMs,
+//   float64(event.TimestampUnixMs) / 1000,
+//   escapeSQLString(event.ContainerId),
+//   escapeSQLString(event.ContainerImage),
+//   escapeSQLString(string(labelsJSON)),
+//   )
+//
+//   logger.Debug("Executing ClickHouse insert query", zap.String("query", query))
+//
+//   if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{
+//     return err
+//   }
+//   return nil
+// }
+
+func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.EbpfEvent) []error{
+
+  var snoopEvents []*pb.EbpfEvent
+  var networkEvent []*pb.EbpfEvent
+  var errors []error
+  for _,e := range events{
+    if isNetworkevent(e.EventType){
+      networkEvent = append(networkEvent, e)
+    }else if isSnoopevent(e.EventType){
+      snoopEvents = append(snoopEvents, e)
+    }
   }
-  query := fmt.Sprintf(
-	`INSERT INTO audit.tracing_events 
-	(pid, uid, gid, ppid, user, user_pid, user_ppid, comm, filename, cgroup_name, cgroup_id,
-	 monotonic_ts_exit_ns, return_code, monotonic_ts_enter_ns, latency_ns, event_type, node_name, latency_ms,wall_time_ms, wall_time_dt,container_id,
-   container_image ,container_labels_json) 
-	VALUES (
-		%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', %d,
-		%d, %d, %d, %d, '%s', '%s', %f,%d,toDateTime64(%f, 3),'%s','%s', '%s' )`,
-	event.Pid,
-	event.Uid,
-	event.Gid,
-	event.Ppid,
-	escapeSQLString(event.User),
-	event.UserPid,
-	event.UserPpid,
-	escapeSQLString(event.Comm),
-	escapeSQLString(event.Filename),
-	escapeSQLString(event.CgroupName),
-	event.CgroupId,
-	event.TimestampNsExit,
-	event.ReturnCode,
-	event.TimestampNs,
-	event.LatencyNs,
-	escapeSQLString(event.EventType),
-	escapeSQLString(event.NodeName),
-	float64(event.LatencyNs)/1_000_000.0,
-  event.TimestampUnixMs,
-  float64(event.TimestampUnixMs) / 1000,
-  escapeSQLString(event.ContainerId),
-  escapeSQLString(event.ContainerImage),
-  escapeSQLString(string(labelsJSON)),
-  )
-  
-  logger.Debug("Executing ClickHouse insert query", zap.String("query", query))
-  
-  if err := ch.conn.AsyncInsert(ctx, query, false); err !=nil{
-    return err
+
+  if len(snoopEvents)>0 {
+    if err := ch.insertSnoopEvent(ctx, snoopEvents); err !=nil{
+      errors = append(errors, err)
+    }
   }
+
+  if len(networkEvent) > 0 {
+    if err := ch.insertNetworkEvent(ctx, snoopEvents); err !=nil{
+      errors = append(errors, err)
+    }
+  }
+
+  if len(errors) >0{
+    return errors
+  }
+
   return nil
 }
 
-func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.EbpfEvent) error{
-  
+func (ch *Chconnection) insertSnoopEvent(ctx context.Context,events []*pb.EbpfEvent) error{
   logger := logutil.GetLogger()
 
 	batch, err := ch.conn.PrepareBatch(ctx, `
@@ -134,6 +165,12 @@ func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.E
 	}
 
 	for _, event := range events {
+    snoopPayload, ok := event.Payload.(*pb.EbpfEvent_Snoop)
+		if !ok {
+			logger.Warn("Skipping event: unexpected payload type", zap.String("event_type", event.EventType))
+			continue
+		}
+		snoop := snoopPayload.Snoop
 		labelsJSON, err := json.Marshal(event.ContainerLabelsJson)
 		if err != nil {
 			logger.Warn("Could not marshal container labels", zap.Error(err))
@@ -150,11 +187,11 @@ func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.E
 			event.UserPid,
 			event.UserPpid,
 			event.Comm,
-			event.Filename,
+			snoop.Filename,
 			event.CgroupName,
 			event.CgroupId,
 			event.TimestampNsExit,
-			event.ReturnCode,
+			snoop.ReturnCode,
 			event.TimestampNs,
 			event.LatencyNs,
 			event.EventType,
@@ -179,9 +216,93 @@ func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.E
 
 	logger.Debug("Batch insert successful", zap.Int("events", len(events)))
 	return nil
+
+}
+
+func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.EbpfEvent) error{
+  logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+		INSERT INTO audit.network_events (
+			pid, uid, gid, ppid, user_pid, user_ppid, cgroup_id, cgroup_name, comm,
+			sa_family, saddr_ipv4, daddr_ipv4, sport, dport,
+			monotonic_ts_enter_ns, monotonic_ts_exit_ns, return_code, latency_ns,
+			event_type, node_name, user, latency_ms, wall_time_ms, wall_time_dt,
+			container_id, container_image, container_labels_json
+		)
+	`)
+	if err != nil {
+		logger.Error("Failed to prepare ClickHouse batch", zap.Error(err))
+		return err
+	}
+
+  for _, event := range events {
+    networkPayload, ok := event.Payload.(*pb.EbpfEvent_Network)
+		if !ok {
+			logger.Warn("Skipping event: unexpected payload type", zap.String("event_type", event.EventType))
+			continue
+		}
+		network := networkPayload.Network
+		labelsJSON, _ := json.Marshal(event.ContainerLabelsJson)
+		wallTime := time.Unix(0, int64(event.TimestampUnixMs)*int64(time.Millisecond))
+
+		err := batch.Append(
+			event.Pid,
+			event.Uid,
+			event.Gid,
+			event.Ppid,
+			event.UserPid,
+			event.UserPpid,
+			event.CgroupId,
+			event.CgroupName,
+			event.Comm,
+			network.SaFamily,
+			network.Saddr,
+			network.Daddr,
+			network.Sport,
+			network.Dport,
+			event.TimestampNs,
+			event.TimestampNsExit,
+			network.ReturnCode,
+			event.LatencyNs,
+			event.EventType,
+			event.NodeName,
+			event.User,
+			float64(event.LatencyNs)/1_000_000.0,
+			event.TimestampUnixMs,
+			wallTime,
+			event.ContainerId,
+			event.ContainerImage,
+			string(labelsJSON),
+		)
+		if err != nil {
+			logger.Error("Failed to append network row", zap.Error(err))
+			return err
+		}
+	}
+
+	return batch.Send()
 }
 
 func escapeSQLString(s string) string {
 	return strings.ReplaceAll(s, "'", "''") // escape single quotes
+}
+
+func isNetworkevent(eventType string) bool{
+  switch eventType {
+  case "connect", "accept":
+		return true
+	default:
+		return false
+	}
+}
+
+func isSnoopevent(eventType string) bool{
+  switch eventType {
+  case "open", "execve","chmod":
+		return true
+	default:
+		return false
+	}
 }
 

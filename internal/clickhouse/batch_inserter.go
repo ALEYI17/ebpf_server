@@ -74,8 +74,31 @@ func (b *BatchInserter) Submit(event *pb.EbpfEvent) {
 }
 
 func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
-	err := b.ch.InsertBatchTraceEvent(context.Background(), events)
-	if err != nil {
-		logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
-	}
+  var snoopBatch []*pb.EbpfEvent
+  var networkBatch []*pb.EbpfEvent
+
+  for _,e := range events{
+    switch e.Payload.(type){
+      case *pb.EbpfEvent_Snoop:
+        snoopBatch = append(snoopBatch, e)
+      case *pb.EbpfEvent_Network:
+        networkBatch =append(networkBatch, e)
+      default:
+        logutil.GetLogger().Warn("Unknown event payload type", zap.String("event_type", e.EventType))
+    }
+  }
+
+  if len(snoopBatch)>0{
+    err := b.ch.insertSnoopEvent(context.Background(), snoopBatch)
+    if err != nil {
+      logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
+    }
+  }
+
+  if len(networkBatch) > 0{
+    err := b.ch.insertNetworkEvent(context.Background(), networkBatch)
+    if err !=nil{
+      logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
+    }
+  }
 }
