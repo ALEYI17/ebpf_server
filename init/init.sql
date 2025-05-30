@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS audit.network_events (
   daddr_ipv4 String,             -- dest IPv4 address as string
   sport String,                 -- source port
   dport String,                 -- dest port
-
+  saddr_ipv6 String,  
+  daddr_ipv6 String,
   monotonic_ts_enter_ns UInt64,
   monotonic_ts_exit_ns UInt64,
   return_code Int64,

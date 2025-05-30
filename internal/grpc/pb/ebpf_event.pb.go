@@ -315,6 +315,8 @@ type NetworkEvent struct {
 	Sport         string                 `protobuf:"bytes,27,opt,name=sport,proto3" json:"sport,omitempty"`                       // e.g., "443"
 	Dport         string                 `protobuf:"bytes,28,opt,name=dport,proto3" json:"dport,omitempty"`                       // e.g., "12345"
 	SaFamily      string                 `protobuf:"bytes,29,opt,name=sa_family,json=saFamily,proto3" json:"sa_family,omitempty"` // e.g., "AF_INET", "AF_INET6"
+	Saddrv6       string                 `protobuf:"bytes,30,opt,name=saddrv6,proto3" json:"saddrv6,omitempty"`
+	Daddrv6       string                 `protobuf:"bytes,31,opt,name=daddrv6,proto3" json:"daddrv6,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -391,10 +393,24 @@ func (x *NetworkEvent) GetSaFamily() string {
 	return ""
 }
 
+func (x *NetworkEvent) GetSaddrv6() string {
+	if x != nil {
+		return x.Saddrv6
+	}
+	return ""
+}
+
+func (x *NetworkEvent) GetDaddrv6() string {
+	if x != nil {
+		return x.Daddrv6
+	}
+	return ""
+}
+
 type CollectorAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,12,opt,name=status,proto3" json:"status,omitempty"`
-	Message       string                 `protobuf:"bytes,13,opt,name=message,proto3" json:"message,omitempty"`
+	Status        string                 `protobuf:"bytes,32,opt,name=status,proto3" json:"status,omitempty"`
+	Message       string                 `protobuf:"bytes,33,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -481,7 +497,7 @@ const file_ebpf_event_proto_rawDesc = "" +
 	"\fSnooperEvent\x12\x1a\n" +
 	"\bfilename\x18\x16 \x01(\tR\bfilename\x12\x1f\n" +
 	"\vreturn_code\x18\x17 \x01(\x03R\n" +
-	"returnCode\"\xa4\x01\n" +
+	"returnCode\"\xd8\x01\n" +
 	"\fNetworkEvent\x12\x1f\n" +
 	"\vreturn_code\x18\x18 \x01(\x03R\n" +
 	"returnCode\x12\x14\n" +
@@ -489,10 +505,12 @@ const file_ebpf_event_proto_rawDesc = "" +
 	"\x05daddr\x18\x1a \x01(\tR\x05daddr\x12\x14\n" +
 	"\x05sport\x18\x1b \x01(\tR\x05sport\x12\x14\n" +
 	"\x05dport\x18\x1c \x01(\tR\x05dport\x12\x1b\n" +
-	"\tsa_family\x18\x1d \x01(\tR\bsaFamily\"@\n" +
+	"\tsa_family\x18\x1d \x01(\tR\bsaFamily\x12\x18\n" +
+	"\asaddrv6\x18\x1e \x01(\tR\asaddrv6\x12\x18\n" +
+	"\adaddrv6\x18\x1f \x01(\tR\adaddrv6\"@\n" +
 	"\fCollectorAck\x12\x16\n" +
-	"\x06status\x18\f \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\r \x01(\tR\amessage2A\n" +
+	"\x06status\x18  \x01(\tR\x06status\x12\x18\n" +
+	"\amessage\x18! \x01(\tR\amessage2A\n" +
 	"\x0eEventCollector\x12/\n" +
 	"\n" +
 	"SendEvents\x12\r.pb.EbpfEvent\x1a\x10.pb.CollectorAck(\x01B!Z\x1febpf_loader/internal/grpc/pb;pbb\x06proto3"

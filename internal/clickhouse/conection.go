@@ -225,7 +225,7 @@ func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.Ebpf
 	batch, err := ch.conn.PrepareBatch(ctx, `
 		INSERT INTO audit.network_events (
 			pid, uid, gid, ppid, user_pid, user_ppid, cgroup_id, cgroup_name, comm,
-			sa_family, saddr_ipv4, daddr_ipv4, sport, dport,
+			sa_family, saddr_ipv4, daddr_ipv4, sport, dport,saddr_ipv6,daddr_ipv6,
 			monotonic_ts_enter_ns, monotonic_ts_exit_ns, return_code, latency_ns,
 			event_type, node_name, user, latency_ms, wall_time_ms, wall_time_dt,
 			container_id, container_image, container_labels_json
@@ -261,6 +261,8 @@ func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.Ebpf
 			network.Daddr,
 			network.Sport,
 			network.Dport,
+      network.Saddrv6,
+      network.Daddrv6,
 			event.TimestampNs,
 			event.TimestampNsExit,
 			network.ReturnCode,

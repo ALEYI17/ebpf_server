@@ -44,11 +44,14 @@ message NetworkEvent {
   string sport = 27;       // e.g., "443"
   string dport = 28;       // e.g., "12345"
   string sa_family = 29;   // e.g., "AF_INET", "AF_INET6"
+  string saddrv6 =30;
+  string daddrv6=31;
+
 }
 
 message CollectorAck {
-  string status = 12;
-  string message = 13;
+  string status = 32;
+  string message = 33;
 }
 
 service EventCollector {
