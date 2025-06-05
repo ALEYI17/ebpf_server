@@ -1,0 +1,1237 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 3,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "container_labels_json"
+          }
+        ]
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "\r\nSELECT\r\n    CAST(container_labels_json.io.kubernetes.pod.name AS String) AS pod_name,\r\n    count(*) AS connections\r\nFROM audit.network_events\r\nWHERE\r\n    wall_time_dt > now() - INTERVAL 8 hour\r\n    AND container_labels_json IS NOT NULL\r\nGROUP BY pod_name\r\nORDER BY connections DESC\r\nLIMIT 10",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n    CAST(container_labels_json.io.kubernetes.pod.name AS String) AS pod_name,\r\n    count(*) AS connections\r\nFROM audit.network_events\r\nWHERE\r\n    wall_time_dt > now() - INTERVAL 8 hour\r\n    AND container_labels_json IS NOT NULL\r\nGROUP BY pod_name\r\nORDER BY connections DESC\r\nLIMIT 10",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Top Pods by Network Events",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "database": "audit",
+          "datasource": {
+            "type": "vertamedia-clickhouse-datasource",
+            "uid": "dem711n1pdjb4d"
+          },
+          "dateTimeColDataType": "wall_time_dt",
+          "dateTimeType": "DATETIME",
+          "editorMode": "sql",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n  event_type,\r\n  comm,\r\n  filename,\r\n  count() AS total_events\r\nFROM audit.tracing_events\r\nGROUP BY\r\n  event_type,\r\n  comm,\r\n  filename\r\nORDER BY\r\n  total_events DESC\r\nLIMIT 100\r\n",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n  event_type,\r\n  comm,\r\n  filename,\r\n  count() AS total_events\r\nFROM audit.tracing_events\r\nGROUP BY\r\n  event_type,\r\n  comm,\r\n  filename\r\nORDER BY\r\n  total_events DESC\r\nLIMIT 100",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "table": "tracing_events",
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "count event type",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 12,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT \r\n  comm,\r\n  count(*) AS activity\r\nFROM audit.network_events\r\nWHERE wall_time_dt > now() - INTERVAL 12 hour\r\nGROUP BY comm\r\nORDER BY activity DESC\r\nLIMIT 10",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT (intDiv(toUInt32(undefined), 2) * 2) * 1000 as t, count() FROM undefined WHERE undefined >= toDateTime(-702) AND undefined <= toDateTime(734) GROUP BY t ORDER BY t",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Syscall Activity by Executable",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "frequency"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n  node_name,\r\n  event_type,\r\n  count() AS total_syscalls\r\nFROM audit.tracing_events\r\nGROUP BY\r\n  node_name,\r\n  event_type\r\nORDER BY\r\n  node_name,\r\n  total_syscalls DESC\r\n",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n  node_name,\r\n  event_type,\r\n  count() AS total_syscalls\r\nFROM audit.tracing_events\r\nGROUP BY\r\n  node_name,\r\n  event_type\r\nORDER BY\r\n  node_name,\r\n  total_syscalls DESC",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Total syscall by node",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT \r\n  container_image,\r\n  count(*) AS connections\r\nFROM audit.network_events\r\nWHERE wall_time_dt > now() - INTERVAL 6 hour\r\nAND event_type == 'connect'\r\nAND container_image !=''\r\nGROUP BY container_image\r\nORDER BY connections DESC\r\nLIMIT 10",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT \r\n  container_image,\r\n  count(*) AS connections\r\nFROM audit.network_events\r\nWHERE wall_time_dt > now() - INTERVAL 6 hour\r\nAND event_type == 'connect'\r\nAND container_image !='\r\nGROUP BY container_image\r\nORDER BY connections DESC\r\nLIMIT 10",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Connection Events by Container Image",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n    toStartOfDay(wall_time_dt) AS day,\r\n    COUNT(*) AS syscall_count\r\nFROM audit.tracing_events\r\nGROUP BY day\r\nORDER BY day\r\n",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n    toStartOfDay(wall_time_dt) AS day,\r\n    COUNT(*) AS syscall_count\r\nFROM audit.tracing_events\r\nGROUP BY day\r\nORDER BY day",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Total syscall by day",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 10,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT \r\n  node_name,\r\n  count(*) AS events\r\nFROM audit.network_events\r\nWHERE wall_time_dt > now() - INTERVAL 1 day\r\nGROUP BY node_name\r\nORDER BY events DESC",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT \r\n  node_name,\r\n  count(*) AS events\r\nFROM audit.network_events\r\nWHERE wall_time_dt > now() - INTERVAL 1 day\r\nGROUP BY node_name\r\nORDER BY events DESC",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Network Activity per Node",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 9,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT \r\n  dport,\r\n  count(*) AS hits\r\nFROM audit.network_events\r\nWHERE dport != ''\r\n  AND wall_time_dt > now() - INTERVAL 1 day\r\nGROUP BY dport\r\nORDER BY hits DESC\r\nLIMIT 10",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT \r\n  dport,\r\n  count(*) AS hits\r\nFROM audit.network_events\r\nWHERE dport != ''\r\n  AND wall_time_dt > now() - INTERVAL 1 day\r\nGROUP BY dport\r\nORDER BY hits DESC\r\nLIMIT 10",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Top Destination Ports",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 8,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT \r\n  saddr_ipv4,\r\n  count(*) AS connections\r\nFROM audit.network_events\r\nWHERE saddr_ipv4 != ''\r\nGROUP BY saddr_ipv4\r\nORDER BY connections DESC\r\nLIMIT 10",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT \r\n  saddr_ipv4,\r\n  count(*) AS connections\r\nFROM audit.network_events\r\nWHERE saddr_ipv4 != ''\r\nGROUP BY saddr_ipv4\r\nORDER BY connections DESC\r\nLIMIT 10",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Top Source IPs (IPv4) by Connection Count",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 0,
+            "pointSize": 40,
+            "scaleDistribution": {
+              "log": 2,
+              "type": "log"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "time_series",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n  toStartOfInterval(wall_time_dt, INTERVAL 3 HOUR) AS time,\r\n  comm,\r\n  avg(latency_ms) AS avg_latency_ms\r\nFROM audit.tracing_events\r\nGROUP BY time, comm\r\nORDER BY time ASC\r\n",
+          "rawQuery": "/* grafana dashboard=clickhouse, user=1 */\nSELECT\r\n  toStartOfInterval(wall_time_dt, INTERVAL 3 hour) AS time,\r\n  comm,\r\n  avg(latency_ms) AS avg_latency_ms\r\nFROM audit.tracing_events\r\nGROUP BY time, comm\r\nORDER BY time ASC",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "New panel",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n    node_name,\r\n    event_type,\r\n    argMax(comm, latency_ms) AS comm_with_max_latency,\r\n    argMax(filename, latency_ms) AS filename_with_max_latency,\r\n    argMax(cgroup_name, latency_ms) AS cgroup_name_with_max_latency,\r\n    MAX(latency_ms) AS max_latency_ms\r\nFROM audit.tracing_events\r\nGROUP BY node_name, event_type\r\nORDER BY max_latency_ms DESC\r\n",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n    node_name,\r\n    event_type,\r\n    argMax(comm, latency_ms) AS comm_with_max_latency,\r\n    argMax(filename, latency_ms) AS filename_with_max_latency,\r\n    argMax(cgroup_name, latency_ms) AS cgroup_name_with_max_latency,\r\n    MAX(latency_ms) AS max_latency_ms\r\nFROM audit.tracing_events\r\nGROUP BY node_name, event_type\r\nORDER BY max_latency_ms DESC",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "Max latency per node and event type",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n  cgroup_id,\r\n  cgroup_name,\r\n  comm,\r\n  count() AS total_events\r\nFROM audit.tracing_events\r\nGROUP BY ROLLUP(comm, cgroup_id, cgroup_name)\r\nORDER BY\r\n  total_events DESC",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n  cgroup_id,\r\n  cgroup_name,\r\n  comm,\r\n  count() AS total_events\r\nFROM audit.tracing_events\r\nGROUP BY ROLLUP(comm, cgroup_id, cgroup_name)\r\nORDER BY\r\n  total_events DESC",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "ROLLUP number of comm by cgroup ",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "vertamedia-clickhouse-datasource",
+        "uid": "feo2v0h8r6p6ob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 72
+      },
+      "id": 2,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "adHocFilters": [],
+          "adHocValuesQuery": "",
+          "add_metadata": true,
+          "contextWindowSize": "10",
+          "editorMode": "builder",
+          "extrapolate": true,
+          "format": "table",
+          "formattedQuery": "SELECT $timeSeries as t, count() FROM $table WHERE $timeFilter GROUP BY t ORDER BY t",
+          "interval": "",
+          "intervalFactor": 1,
+          "query": "SELECT\r\n  comm,\r\n  event_type,\r\n  cgroup_name,\r\n  avg(latency_ms) AS avg_latency_ms\r\nFROM audit.tracing_events\r\nGROUP BY\r\n  event_type,\r\n  cgroup_name,\r\n  comm\r\nORDER BY\r\n  avg_latency_ms DESC\r\nLIMIT 100",
+          "rawQuery": "/* grafana dashboard=clickhouse Copy, user=1 */\nSELECT\r\n  comm,\r\n  event_type,\r\n  cgroup_name,\r\n  avg(latency_ms) AS avg_latency_ms\r\nFROM audit.tracing_events\r\nGROUP BY\r\n  event_type,\r\n  cgroup_name,\r\n  comm\r\nORDER BY\r\n  avg_latency_ms DESC\r\nLIMIT 100",
+          "refId": "A",
+          "round": "0s",
+          "skip_comments": true,
+          "useWindowFuncForMacros": true
+        }
+      ],
+      "title": "avg(latency) by comm",
+      "type": "barchart"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "1969-12-31T23:48:18.876Z",
+    "to": "1970-01-01T00:12:14.780Z"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "clickhouse Copy",
+  "uid": "952200d6-59bf-428d-b217-e8e787669007",
+  "version": 2
+}
