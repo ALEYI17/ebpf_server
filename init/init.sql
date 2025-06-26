@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS audit.network_events (
   dport String,                 -- dest port
   saddr_ipv6 String,  
   daddr_ipv6 String,
+  resolved_domain Nullable(String),
   monotonic_ts_enter_ns UInt64,
   monotonic_ts_exit_ns UInt64,
   return_code Int64,

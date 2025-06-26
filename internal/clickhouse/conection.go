@@ -228,7 +228,7 @@ func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.Ebpf
 			sa_family, saddr_ipv4, daddr_ipv4, sport, dport,saddr_ipv6,daddr_ipv6,
 			monotonic_ts_enter_ns, monotonic_ts_exit_ns, return_code, latency_ns,
 			event_type, node_name, user, latency_ms, wall_time_ms, wall_time_dt,
-			container_id, container_image, container_labels_json
+			container_id, container_image, container_labels_json, resolved_domain
 		)
 	`)
 	if err != nil {
@@ -276,6 +276,7 @@ func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.Ebpf
 			event.ContainerId,
 			event.ContainerImage,
 			string(labelsJSON),
+      network.ResolvedDomain,
 		)
 		if err != nil {
 			logger.Error("Failed to append network row", zap.Error(err))
