@@ -94,6 +94,34 @@ export BATCH_FLUSH_MS=5000
 go run cmd/main.go
 ```
 
+
+## 📈 Prometheus Metrics
+
+The server exposes Prometheus-compatible metrics at `/metrics` on port `:9090` by default. You can scrape these using Prometheus or visualize them in Grafana.
+
+> ⚠️ Metrics are served over a separate HTTP server and port from the gRPC service.
+
+### 🔍 Exposed Metrics
+
+#### 🛰️ gRPC Server Metrics
+
+| Metric Name                             | Type    | Labels   | Description                                                                    |
+| --------------------------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
+| `infrasight_grpc_events_received_total` | Counter | `source` | Total number of eBPF events received via gRPC stream  |
+| `infrasight_grpc_stream_errors_total`   | Counter | `type`   | Total number of gRPC stream receive errors                |
+| `infrasight_grpc_active_streams`        | Gauge   | *(none)* | Number of currently open gRPC streams                                          |
+
+#### 🛢️ ClickHouse Insert Metrics
+
+| Metric Name                                    | Type      | Labels   | Description                                                         |
+| ---------------------------------------------- | --------- | -------- | ------------------------------------------------------------------- |
+| `infrasight_clickhouse_insert_batches_total`   | Counter   | `status` | Number of ClickHouse insert attempts (`success` or `error`)         |
+| `infrasight_clickhouse_insert_latency_seconds` | Histogram | *(none)* | Time taken to insert each batch into ClickHouse                     |
+| `infrasight_clickhouse_batch_size`             | Histogram | *(none)* | Number of events per ClickHouse insert batch (batch size histogram) |
+
+
+
+
 ## 🗃️ ClickHouse Schema
 
 Ensure your database has the following table:
