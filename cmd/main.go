@@ -5,14 +5,17 @@ import (
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc"
+	"ebpf_server/internal/metrics"
 	"ebpf_server/pkg/logutil"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +24,17 @@ func main() {
   logutil.InitLogger()
 
   logger := logutil.GetLogger()
-
+  
+  go func(){
+    metrics.RegisterAll()
+    mux:= http.NewServeMux()
+    mux.Handle("/metrics", promhttp.Handler())
+    logger := logutil.GetLogger()
+    logger.Info("Serving Prometheus metrics on port 9090")
+    if err := http.ListenAndServe(":9090", mux); err != nil {
+        logger.Warn("Prometheus metrics cannot be served", zap.Error(err))
+    }
+  }()
 	ctx, cancel := context.WithCancel(context.Background())
   defer cancel()
 
