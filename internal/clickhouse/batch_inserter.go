@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"ebpf_server/internal/grpc/pb"
+	"ebpf_server/internal/metrics"
 	"ebpf_server/pkg/logutil"
 	"time"
 
@@ -88,17 +89,33 @@ func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
     }
   }
 
+  totalSize := len(events)
+  metrics.ClickhouseBatchSize.WithLabelValues().Observe(float64(totalSize))
+
   if len(snoopBatch)>0{
+    start:= time.Now()
     err := b.ch.insertSnoopEvent(context.Background(), snoopBatch)
+    duration := time.Since(start).Seconds()
+    metrics.ClickhouseInsertLatency.WithLabelValues().Observe(duration)
     if err != nil {
+      metrics.ClickhouseInsertTotal.WithLabelValues("error").Inc()
       logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
+    }else{
+      metrics.ClickhouseInsertTotal.WithLabelValues("success").Inc()
     }
+    
   }
 
   if len(networkBatch) > 0{
+    start:= time.Now()
     err := b.ch.insertNetworkEvent(context.Background(), networkBatch)
+    duration:= time.Since(start).Seconds()
+    metrics.ClickhouseInsertLatency.WithLabelValues().Observe(duration)
     if err !=nil{
+      metrics.ClickhouseInsertTotal.WithLabelValues("error").Inc()
       logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
+    }else{
+      metrics.ClickhouseInsertTotal.WithLabelValues("success").Inc()
     }
   }
 }

@@ -3,6 +3,7 @@ package grpc
 import (
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/grpc/pb"
+	"ebpf_server/internal/metrics"
 	"ebpf_server/pkg/logutil"
 	"io"
 
@@ -29,6 +30,9 @@ func NewGrpcServer(server *Server) *grpc.Server{
 
 func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
   logger := logutil.GetLogger()
+  metrics.GrpcActiveStreams.Inc()
+  defer metrics.GrpcActiveStreams.Dec()
+
 	logger.Info("Receiving streamed events from client")
 
 	for {
@@ -42,9 +46,11 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 		}
 		if err != nil {
 			logger.Error("Error receiving event from stream", zap.Error(err))
+      metrics.GrpcStreamErrors.WithLabelValues("recv_error").Inc()
 			return err
 		}
 
+    metrics.GrpcEventsReceived.WithLabelValues(event.EventType).Inc()
     s.bi.Submit(event)
 
 	}
