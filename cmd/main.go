@@ -25,20 +25,20 @@ func main() {
 
   logger := logutil.GetLogger()
   
+  conf := config.LoadServerConfig()
+
   go func(){
     metrics.RegisterAll()
     mux:= http.NewServeMux()
     mux.Handle("/metrics", promhttp.Handler())
     logger := logutil.GetLogger()
-    logger.Info("Serving Prometheus metrics on port 9090")
-    if err := http.ListenAndServe(":9090", mux); err != nil {
+    logger.Info("Serving Prometheus metrics on port", zap.String("prometheus-port", conf.PrometheusPort))
+    if err := http.ListenAndServe(conf.PrometheusPort, mux); err != nil {
         logger.Warn("Prometheus metrics cannot be served", zap.Error(err))
     }
   }()
 	ctx, cancel := context.WithCancel(context.Background())
   defer cancel()
-
-  conf := config.LoadServerConfig()
 
   logger.Info("Starting gRPC server", zap.String("port", conf.Port))
   lis, err := net.Listen("tcp", fmt.Sprintf(":%s", conf.Port))
