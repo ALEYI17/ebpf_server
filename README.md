@@ -79,6 +79,7 @@ You can configure the server using environment variables:
 | `DB_NAME`        | ClickHouse database name                 | `audit`          |
 | `BATCH_MAX_SIZE` | Max number of events per insert batch    | `1000`           |
 | `BATCH_FLUSH_MS` | Max time (in ms) before flushing a batch | `10000`          |
+| `PROMETHEUS_PORT`  | Port to expose Prometheus metrics        | `9090`           |
 
 Example:
 
