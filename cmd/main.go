@@ -32,8 +32,9 @@ func main() {
     mux:= http.NewServeMux()
     mux.Handle("/metrics", promhttp.Handler())
     logger := logutil.GetLogger()
+    addr := ":" + conf.PrometheusPort
     logger.Info("Serving Prometheus metrics on port", zap.String("prometheus-port", conf.PrometheusPort))
-    if err := http.ListenAndServe(conf.PrometheusPort, mux); err != nil {
+    if err := http.ListenAndServe(addr, mux); err != nil {
         logger.Warn("Prometheus metrics cannot be served", zap.Error(err))
     }
   }()

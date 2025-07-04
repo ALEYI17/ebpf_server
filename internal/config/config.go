@@ -25,7 +25,7 @@ func LoadServerConfig() *ServerConfig{
     DBName:     getEnv("DB_NAME", "audit"),
     BatchSize: getEnvAsInt("BATCH_MAX_SIZE", 1000),
     BatchFlushMs: getEnvAsInt("BATCH_FLUSH_MS", 10000),
-    PrometheusPort: getEnv("PROMETHEUS_PORT", ":9090"),
+    PrometheusPort: getEnv("PROMETHEUS_PORT", "9090"),
   }
 }
 
