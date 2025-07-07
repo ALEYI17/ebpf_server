@@ -257,8 +257,8 @@ func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.Ebpf
 			event.CgroupName,
 			event.Comm,
 			network.SaFamily,
-			network.Saddr,
-			network.Daddr,
+			network.Saddrv4,
+			network.Daddrv4,
 			network.Sport,
 			network.Dport,
       network.Saddrv6,
@@ -285,6 +285,78 @@ func (ch *Chconnection) insertNetworkEvent(ctx context.Context,events []*pb.Ebpf
 	}
 
 	return batch.Send()
+}
+
+func (ch *Chconnection) insertPtraceEvent(ctx context.Context,events []*pb.EbpfEvent) error{
+  logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+		INSERT INTO audit.ptrace_events (
+			pid, uid, gid, ppid, user_pid, user_ppid, cgroup_id, cgroup_name, comm,
+			request, target_pid, addr, data, request_name,
+			monotonic_ts_enter_ns, monotonic_ts_exit_ns, return_code, latency_ns,
+			event_type, node_name, user,
+			latency_ms, wall_time_ms, wall_time_dt,
+			container_id, container_image, container_labels_json
+		)
+	`)
+
+  if err != nil {
+		logger.Error("Failed to prepare ClickHouse ptrace batch", zap.Error(err))
+		return err
+	}
+
+  for _, event := range events {
+		ptracePayload, ok := event.Payload.(*pb.EbpfEvent_Ptrace)
+		if !ok {
+			logger.Warn("Skipping event: unexpected payload type", zap.String("event_type", event.EventType))
+			continue
+		}
+		ptrace := ptracePayload.Ptrace
+		labelsJSON, _ := json.Marshal(event.ContainerLabelsJson)
+		wallTime := time.Unix(0, int64(event.TimestampUnixMs)*int64(time.Millisecond))
+
+		err := batch.Append(
+			event.Pid,
+			event.Uid,
+			event.Gid,
+			event.Ppid,
+			event.UserPid,
+			event.UserPpid,
+			event.CgroupId,
+			event.CgroupName,
+			event.Comm,
+
+			ptrace.Request,
+			ptrace.TargetPid,
+			ptrace.Addr,
+			ptrace.Data,
+			ptrace.RequestName,
+
+			event.TimestampNs,
+			event.TimestampNsExit,
+			ptrace.ReturnCode,
+			event.LatencyNs,
+
+			event.EventType,
+			event.NodeName,
+			event.User,
+
+			float64(event.LatencyNs)/1_000_000.0,
+			event.TimestampUnixMs,
+			wallTime,
+
+			event.ContainerId,
+			event.ContainerImage,
+			string(labelsJSON),
+		)
+		if err != nil {
+			logger.Error("Failed to append ptrace row", zap.Error(err))
+			return err
+		}
+	}
+  
+  return batch.Send()
 }
 
 func escapeSQLString(s string) string {

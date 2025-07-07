@@ -65,3 +65,38 @@ CREATE TABLE IF NOT EXISTS audit.network_events (
   container_labels_json JSON
 ) ENGINE = MergeTree()
 ORDER BY wall_time_ms;
+
+CREATE TABLE IF NOT EXISTS audit.ptrace_events (
+  pid UInt32,
+  uid UInt32,
+  gid UInt32,
+  ppid UInt32,
+  user_pid UInt32,
+  user_ppid UInt32,
+  cgroup_id UInt64,
+  cgroup_name String,
+  comm String,
+  
+  request Int64,
+  target_pid Int64,
+  addr UInt64,
+  data UInt64,
+  request_name String,
+  monotonic_ts_enter_ns UInt64,
+  monotonic_ts_exit_ns UInt64,
+  return_code Int64,
+  latency_ns UInt64,
+
+  event_type String,
+  node_name String,
+  user String,
+
+  latency_ms Float64, 
+  wall_time_ms Int64,
+  wall_time_dt DateTime64(3),
+
+  container_id String,
+  container_image String,
+  container_labels_json JSON
+) ENGINE = MergeTree()
+ORDER BY wall_time_ms;

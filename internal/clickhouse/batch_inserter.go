@@ -77,6 +77,7 @@ func (b *BatchInserter) Submit(event *pb.EbpfEvent) {
 func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
   var snoopBatch []*pb.EbpfEvent
   var networkBatch []*pb.EbpfEvent
+  var ptraceBatch []*pb.EbpfEvent
 
   for _,e := range events{
     switch e.Payload.(type){
@@ -84,6 +85,8 @@ func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
         snoopBatch = append(snoopBatch, e)
       case *pb.EbpfEvent_Network:
         networkBatch =append(networkBatch, e)
+      case *pb.EbpfEvent_Ptrace:
+        ptraceBatch = append(ptraceBatch, e)
       default:
         logutil.GetLogger().Warn("Unknown event payload type", zap.String("event_type", e.EventType))
     }
@@ -110,6 +113,19 @@ func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
     start:= time.Now()
     err := b.ch.insertNetworkEvent(context.Background(), networkBatch)
     duration:= time.Since(start).Seconds()
+    metrics.ClickhouseInsertLatency.WithLabelValues().Observe(duration)
+    if err !=nil{
+      metrics.ClickhouseInsertTotal.WithLabelValues("error").Inc()
+      logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
+    }else{
+      metrics.ClickhouseInsertTotal.WithLabelValues("success").Inc()
+    }
+  }
+
+  if len(ptraceBatch)>0{
+    start := time.Now()
+    err := b.ch.insertPtraceEvent(context.Background(), ptraceBatch)   
+    duration := time.Since(start).Seconds()
     metrics.ClickhouseInsertLatency.WithLabelValues().Observe(duration)
     if err !=nil{
       metrics.ClickhouseInsertTotal.WithLabelValues("error").Inc()
