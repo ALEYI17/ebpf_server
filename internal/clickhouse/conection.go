@@ -433,6 +433,77 @@ func (ch *Chconnection) insertMmapEvent(ctx context.Context,events []*pb.EbpfEve
 }
 
 
+func (ch *Chconnection) insertMountEvent(ctx context.Context,events []*pb.EbpfEvent) error{
+  logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+		INSERT INTO audit.mount_events (
+			pid, uid, gid, ppid, user_pid, user_ppid, cgroup_id, cgroup_name, comm,
+			dev_name, dir_name, type, flags,
+			monotonic_ts_enter_ns, monotonic_ts_exit_ns, return_code, latency_ns,
+			event_type, node_name, user,
+			latency_ms, wall_time_ms, wall_time_dt,
+			container_id, container_image, container_labels_json
+		)
+	`)
+
+  if err != nil {
+		logger.Error("Failed to prepare ClickHouse ptrace batch", zap.Error(err))
+		return err
+	}
+
+  for _, event := range events {
+		mountPayload, ok := event.Payload.(*pb.EbpfEvent_Mount)
+		if !ok {
+			logger.Warn("Skipping event: unexpected payload type", zap.String("event_type", event.EventType))
+			continue
+		}
+		mount := mountPayload.Mount
+		labelsJSON, _ := json.Marshal(event.ContainerLabelsJson)
+		wallTime := time.Unix(0, int64(event.TimestampUnixMs)*int64(time.Millisecond))
+
+		err := batch.Append(
+			event.Pid,
+			event.Uid,
+			event.Gid,
+			event.Ppid,
+			event.UserPid,
+			event.UserPpid,
+			event.CgroupId,
+			event.CgroupName,
+			event.Comm,
+
+			mount.DevName,
+			mount.DirName,
+			mount.Type,
+			mount.Flags,
+
+			event.TimestampNs,
+			event.TimestampNsExit,
+			mount.ReturnCode,
+			event.LatencyNs,
+
+			event.EventType,
+			event.NodeName,
+			event.User,
+
+			float64(event.LatencyNs)/1_000_000.0,
+			event.TimestampUnixMs,
+			wallTime,
+
+			event.ContainerId,
+			event.ContainerImage,
+			string(labelsJSON),
+		)
+		if err != nil {
+			logger.Error("Failed to append ptrace row", zap.Error(err))
+			return err
+		}
+	}
+  
+  return batch.Send()
+}
+
 func escapeSQLString(s string) string {
 	return strings.ReplaceAll(s, "'", "''") // escape single quotes
 }
