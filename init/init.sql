@@ -172,3 +172,23 @@ CREATE TABLE IF NOT EXISTS audit.mount_events (
   container_labels_json JSON
 ) ENGINE = MergeTree()
 ORDER BY wall_time_ms;
+
+CREATE TABLE IF NOT EXISTS audit.resource_events (
+  pid UInt32,
+  comm String,
+
+  cpu_ns UInt64,
+  user_faults UInt64,
+  kernel_faults UInt64,
+  vm_mmap_bytes UInt64,
+  vm_munmap_bytes UInt64,
+  vm_brk_grow_bytes UInt64,
+  vm_brk_shrink_bytes UInt64,
+  bytes_written UInt64,
+  bytes_read UInt64,
+
+  wall_time_ms DateTime DEFAULT now()
+  
+  
+) ENGINE = MergeTree()
+ORDER BY wall_time_ms;

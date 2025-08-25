@@ -504,6 +504,57 @@ func (ch *Chconnection) insertMountEvent(ctx context.Context,events []*pb.EbpfEv
   return batch.Send()
 }
 
+func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.EbpfEvent) error{
+  logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+	INSERT INTO audit.resource_events (
+		pid, comm,
+		cpu_ns, user_faults, kernel_faults,
+		vm_mmap_bytes, vm_munmap_bytes,
+		vm_brk_grow_bytes, vm_brk_shrink_bytes,
+		bytes_written, bytes_read,
+		wall_time_ms
+	)
+  `)
+
+  if err != nil {
+    return fmt.Errorf("failed to prepare batch: %w", err)
+  }
+  for _, event := range events {
+		resourcePayload, ok := event.Payload.(*pb.EbpfEvent_Resource)
+		if !ok {
+			logger.Warn("Skipping event: unexpected payload type", zap.String("event_type", event.EventType))
+			continue
+		}
+		resource := resourcePayload.Resource
+    now := time.Now()
+
+		err := batch.Append(
+			event.Pid,
+			event.Comm,
+      resource.CpuNs,
+      resource.UserFaults,
+      resource.KernelFaults,
+      resource.VmMmapBytes,
+      resource.VmMunmapBytes,
+      resource.VmBrkGrowBytes,
+      resource.VmBrkShrinkBytes,
+      resource.BytesWritten,
+      resource.BytesRead,
+      now.UnixMilli(),
+		)
+		if err != nil {
+			logger.Error("Failed to append ptrace row", zap.Error(err))
+			return err
+		}
+	}
+  
+  return batch.Send()
+}
+
+
+
 func escapeSQLString(s string) string {
 	return strings.ReplaceAll(s, "'", "''") // escape single quotes
 }
