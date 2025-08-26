@@ -509,12 +509,13 @@ func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.Ebp
 
 	batch, err := ch.conn.PrepareBatch(ctx, `
 	INSERT INTO audit.resource_events (
-		pid, comm,
+		pid, comm, uid, gid, ppid, user_pid, user_ppid, cgroup_id, cgroup_name, user,
 		cpu_ns, user_faults, kernel_faults,
 		vm_mmap_bytes, vm_munmap_bytes,
 		vm_brk_grow_bytes, vm_brk_shrink_bytes,
 		bytes_written, bytes_read,
-		wall_time_ms
+		wall_time_dt, wall_time_ms,
+    container_id, container_image, container_labels_json
 	)
   `)
 
@@ -528,11 +529,20 @@ func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.Ebp
 			continue
 		}
 		resource := resourcePayload.Resource
-    now := time.Now()
+    labelsJSON, _ := json.Marshal(event.ContainerLabelsJson)
+    wallTime := time.Unix(0, int64(event.TimestampUnixMs)*int64(time.Millisecond))
 
 		err := batch.Append(
 			event.Pid,
 			event.Comm,
+      event.Uid,
+      event.Gid,
+      event.Ppid,
+      event.UserPid,
+      event.UserPpid,
+      event.CgroupId,
+      event.CgroupName,
+      event.User,
       resource.CpuNs,
       resource.UserFaults,
       resource.KernelFaults,
@@ -542,7 +552,12 @@ func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.Ebp
       resource.VmBrkShrinkBytes,
       resource.BytesWritten,
       resource.BytesRead,
-      now.UnixMilli(),
+      wallTime,
+      event.TimestampUnixMs,
+
+      event.ContainerId,
+			event.ContainerImage,
+			string(labelsJSON),
 		)
 		if err != nil {
 			logger.Error("Failed to append ptrace row", zap.Error(err))
