@@ -513,7 +513,7 @@ func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.Ebp
 		cpu_ns, user_faults, kernel_faults,
 		vm_mmap_bytes, vm_munmap_bytes,
 		vm_brk_grow_bytes, vm_brk_shrink_bytes,
-		bytes_written, bytes_read,
+		bytes_written, bytes_read, isActive,
 		wall_time_dt, wall_time_ms,
     container_id, container_image, container_labels_json
 	)
@@ -552,6 +552,7 @@ func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.Ebp
       resource.VmBrkShrinkBytes,
       resource.BytesWritten,
       resource.BytesRead,
+      resource.IsActive,
       wallTime,
       event.TimestampUnixMs,
 

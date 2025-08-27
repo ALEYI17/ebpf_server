@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS audit.resource_events (
   vm_brk_shrink_bytes UInt64,
   bytes_written UInt64,
   bytes_read UInt64,
+  isActive UInt32,
 
   wall_time_dt DateTime64(3),
   wall_time_ms Int64,
