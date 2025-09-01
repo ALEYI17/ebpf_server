@@ -4,6 +4,7 @@ import (
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/internal/metrics"
+	"ebpf_server/internal/processor"
 	"ebpf_server/pkg/logutil"
 	"io"
 
@@ -14,9 +15,10 @@ import (
 type Server struct {
 	pb.UnimplementedEventCollectorServer
   bi *clickhouse.BatchInserter
+  p *processor.Processor
 }
 
-func NewServer(bi *clickhouse.BatchInserter) *Server{
+func NewServer(bi *clickhouse.BatchInserter, p *processor.Processor) *Server{
   return &Server{bi: bi}
 }
 
@@ -52,6 +54,8 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 
     metrics.GrpcEventsReceived.WithLabelValues(event.EventType).Inc()
     s.bi.Submit(event)
+
+    s.p.Submit(event)
 
 	}
 }
