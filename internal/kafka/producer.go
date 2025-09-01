@@ -16,7 +16,7 @@ func NewKafkaProducer(brokers []string, topic string) *KafkaProducer{
   return &KafkaProducer{
 		writer: &kafka.Writer{
 			Addr:     kafka.TCP(brokers...),
-			Topic:    topic, // 👈 fixed topic
+			Topic:    topic, 
 			Balancer: &kafka.LeastBytes{},
 		},
 		topic: topic,
