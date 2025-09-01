@@ -10,17 +10,19 @@ import (
 )
 
 type Processor struct{
-  kp *kafka.KafkaProducer
+  kpResource *kafka.KafkaProducer
+  kpFrequency *kafka.KafkaProducer
   conf *config.ServerConfig
   eventChanResource chan *pb.EbpfEvent
   eventChanFreq chan *pb.EbpfEvent
   stopCh chan struct{}
 }
 
-func NewProcessor (kp *kafka.KafkaProducer, conf *config.ServerConfig) *Processor{
+func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer, conf *config.ServerConfig) *Processor{
 
   processor := &Processor{
-    kp: kp,
+    kpResource: kpResource,
+    kpFrequency: kpFrequency,
     conf: conf,
     eventChanResource: make(chan *pb.EbpfEvent,1000),
     eventChanFreq: make(chan *pb.EbpfEvent,1000),
@@ -45,6 +47,7 @@ func (p *Processor) run(){
       logutil.GetLogger().Info("doing something for resource payload", zap.String("comm", ever.Comm))
     case evef := <- p.eventChanFreq:
       logutil.GetLogger().Info("doing something for frequency payload", zap.String("comm", evef.Comm))
+      return
     }
   }
 }
