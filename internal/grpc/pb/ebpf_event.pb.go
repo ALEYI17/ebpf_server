@@ -967,6 +967,58 @@ func (x *CollectorAck) GetMessage() string {
 	return ""
 }
 
+type Batch struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          string                 `protobuf:"bytes,70,opt,name=type,proto3" json:"type,omitempty"`
+	Batch         []*EbpfEvent           `protobuf:"bytes,71,rep,name=batch,proto3" json:"batch,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Batch) Reset() {
+	*x = Batch{}
+	mi := &file_ebpf_event_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Batch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Batch) ProtoMessage() {}
+
+func (x *Batch) ProtoReflect() protoreflect.Message {
+	mi := &file_ebpf_event_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Batch.ProtoReflect.Descriptor instead.
+func (*Batch) Descriptor() ([]byte, []int) {
+	return file_ebpf_event_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Batch) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *Batch) GetBatch() []*EbpfEvent {
+	if x != nil {
+		return x.Batch
+	}
+	return nil
+}
+
 var File_ebpf_event_proto protoreflect.FileDescriptor
 
 const file_ebpf_event_proto_rawDesc = "" +
@@ -1067,10 +1119,14 @@ const file_ebpf_event_proto_rawDesc = "" +
 	"\x05count\x18B \x01(\x04R\x05count\"@\n" +
 	"\fCollectorAck\x12\x16\n" +
 	"\x06status\x18D \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18E \x01(\tR\amessage2A\n" +
+	"\amessage\x18E \x01(\tR\amessage\"@\n" +
+	"\x05Batch\x12\x12\n" +
+	"\x04type\x18F \x01(\tR\x04type\x12#\n" +
+	"\x05batch\x18G \x03(\v2\r.pb.EbpfEventR\x05batch2k\n" +
 	"\x0eEventCollector\x12/\n" +
 	"\n" +
-	"SendEvents\x12\r.pb.EbpfEvent\x1a\x10.pb.CollectorAck(\x01B!Z\x1febpf_loader/internal/grpc/pb;pbb\x06proto3"
+	"SendEvents\x12\r.pb.EbpfEvent\x1a\x10.pb.CollectorAck(\x01\x12(\n" +
+	"\tSendBatch\x12\t.pb.Batch\x1a\x10.pb.CollectorAckB!Z\x1febpf_loader/internal/grpc/pb;pbb\x06proto3"
 
 var (
 	file_ebpf_event_proto_rawDescOnce sync.Once
@@ -1084,7 +1140,7 @@ func file_ebpf_event_proto_rawDescGZIP() []byte {
 	return file_ebpf_event_proto_rawDescData
 }
 
-var file_ebpf_event_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_ebpf_event_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_ebpf_event_proto_goTypes = []any{
 	(*EbpfEvent)(nil),     // 0: pb.EbpfEvent
 	(*SnooperEvent)(nil),  // 1: pb.SnooperEvent
@@ -1095,24 +1151,28 @@ var file_ebpf_event_proto_goTypes = []any{
 	(*ResourceEvent)(nil), // 6: pb.ResourceEvent
 	(*SysFreqEvent)(nil),  // 7: pb.SysFreqEvent
 	(*CollectorAck)(nil),  // 8: pb.CollectorAck
-	nil,                   // 9: pb.EbpfEvent.ContainerLabelsJsonEntry
+	(*Batch)(nil),         // 9: pb.Batch
+	nil,                   // 10: pb.EbpfEvent.ContainerLabelsJsonEntry
 }
 var file_ebpf_event_proto_depIdxs = []int32{
-	9, // 0: pb.EbpfEvent.container_labels_json:type_name -> pb.EbpfEvent.ContainerLabelsJsonEntry
-	1, // 1: pb.EbpfEvent.snoop:type_name -> pb.SnooperEvent
-	2, // 2: pb.EbpfEvent.network:type_name -> pb.NetworkEvent
-	3, // 3: pb.EbpfEvent.ptrace:type_name -> pb.PtraceEvent
-	4, // 4: pb.EbpfEvent.mmap:type_name -> pb.MmapEvent
-	5, // 5: pb.EbpfEvent.mount:type_name -> pb.MountEvent
-	6, // 6: pb.EbpfEvent.resource:type_name -> pb.ResourceEvent
-	7, // 7: pb.EbpfEvent.sys_freq:type_name -> pb.SysFreqEvent
-	0, // 8: pb.EventCollector.SendEvents:input_type -> pb.EbpfEvent
-	8, // 9: pb.EventCollector.SendEvents:output_type -> pb.CollectorAck
-	9, // [9:10] is the sub-list for method output_type
-	8, // [8:9] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	10, // 0: pb.EbpfEvent.container_labels_json:type_name -> pb.EbpfEvent.ContainerLabelsJsonEntry
+	1,  // 1: pb.EbpfEvent.snoop:type_name -> pb.SnooperEvent
+	2,  // 2: pb.EbpfEvent.network:type_name -> pb.NetworkEvent
+	3,  // 3: pb.EbpfEvent.ptrace:type_name -> pb.PtraceEvent
+	4,  // 4: pb.EbpfEvent.mmap:type_name -> pb.MmapEvent
+	5,  // 5: pb.EbpfEvent.mount:type_name -> pb.MountEvent
+	6,  // 6: pb.EbpfEvent.resource:type_name -> pb.ResourceEvent
+	7,  // 7: pb.EbpfEvent.sys_freq:type_name -> pb.SysFreqEvent
+	0,  // 8: pb.Batch.batch:type_name -> pb.EbpfEvent
+	0,  // 9: pb.EventCollector.SendEvents:input_type -> pb.EbpfEvent
+	9,  // 10: pb.EventCollector.SendBatch:input_type -> pb.Batch
+	8,  // 11: pb.EventCollector.SendEvents:output_type -> pb.CollectorAck
+	8,  // 12: pb.EventCollector.SendBatch:output_type -> pb.CollectorAck
+	11, // [11:13] is the sub-list for method output_type
+	9,  // [9:11] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_ebpf_event_proto_init() }
@@ -1135,7 +1195,7 @@ func file_ebpf_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ebpf_event_proto_rawDesc), len(file_ebpf_event_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

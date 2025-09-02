@@ -103,6 +103,13 @@ message CollectorAck {
   string message = 69;
 }
 
+message Batch{
+  string type = 70;
+  repeated EbpfEvent batch = 71;
+}
+
+
 service EventCollector {
   rpc SendEvents(stream EbpfEvent) returns (CollectorAck);
+  rpc SendBatch(Batch) returns (CollectorAck);
 }
