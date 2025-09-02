@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type ServerConfig struct{
@@ -14,6 +15,7 @@ type ServerConfig struct{
   BatchSize int
   BatchFlushMs int
   PrometheusPort string
+  KafkaBrokers []string
 }
 
 func LoadServerConfig() *ServerConfig{
@@ -26,6 +28,7 @@ func LoadServerConfig() *ServerConfig{
     BatchSize: getEnvAsInt("BATCH_MAX_SIZE", 1000),
     BatchFlushMs: getEnvAsInt("BATCH_FLUSH_MS", 10000),
     PrometheusPort: getEnv("PROMETHEUS_PORT", "9090"),
+    KafkaBrokers: getEnvAsSlice("KAFKA_BROKERS", []string{"localhost:9092"}),
   }
 }
 
@@ -43,4 +46,15 @@ func getEnvAsInt(name string, defaultVal int) int {
     }
   }
   return defaultVal
+}
+
+func getEnvAsSlice(name string, defaultVal []string) []string {
+    if valStr := os.Getenv(name); valStr != "" {
+        parts := strings.Split(valStr, ",")
+        for i := range parts {
+            parts[i] = strings.TrimSpace(parts[i])
+        }
+        return parts
+    }
+    return defaultVal
 }

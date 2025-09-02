@@ -1,7 +1,7 @@
 package processor
 
 import (
-	"ebpf_server/internal/config"
+	"context"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/internal/kafka"
 	"ebpf_server/pkg/logutil"
@@ -12,18 +12,16 @@ import (
 type Processor struct{
   kpResource *kafka.KafkaProducer
   kpFrequency *kafka.KafkaProducer
-  conf *config.ServerConfig
   eventChanResource chan *pb.EbpfEvent
   eventChanFreq chan *pb.EbpfEvent
   stopCh chan struct{}
 }
 
-func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer, conf *config.ServerConfig) *Processor{
+func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer) *Processor{
 
   processor := &Processor{
     kpResource: kpResource,
     kpFrequency: kpFrequency,
-    conf: conf,
     eventChanResource: make(chan *pb.EbpfEvent,1000),
     eventChanFreq: make(chan *pb.EbpfEvent,1000),
     stopCh: make(chan struct{}),
@@ -44,10 +42,15 @@ func (p *Processor) run(){
       return
 
     case ever := <- p.eventChanResource:
-      logutil.GetLogger().Info("doing something for resource payload", zap.String("comm", ever.Comm))
+      err := p.kpResource.Send(context.Background(), ever)
+      if err !=nil{
+        logutil.GetLogger().Error("failed to write to Kafka", zap.Error(err))
+      }
     case evef := <- p.eventChanFreq:
-      logutil.GetLogger().Info("doing something for frequency payload", zap.String("comm", evef.Comm))
-      return
+      err := p.kpFrequency.Send(context.Background(), evef)
+      if err !=nil {
+        logutil.GetLogger().Error("failed to write to Kafka", zap.Error(err))
+      }
     }
   }
 }
