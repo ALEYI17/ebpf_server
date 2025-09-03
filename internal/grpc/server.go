@@ -71,6 +71,7 @@ func (s *Server) SendBatch(ctx context.Context,in *pb.Batch) (*pb.CollectorAck,e
 
   for _, e := range in.Batch{
     s.bi.Submit(e)
+    s.p.Submit(e)
   }
 
   return &pb.CollectorAck{
