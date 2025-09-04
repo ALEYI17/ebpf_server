@@ -5,7 +5,9 @@ import (
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/config"
 	"ebpf_server/internal/grpc"
+	"ebpf_server/internal/kafka"
 	"ebpf_server/internal/metrics"
+	"ebpf_server/internal/processor"
 	"ebpf_server/pkg/logutil"
 	"fmt"
 	"net"
@@ -55,7 +57,13 @@ func main() {
 
   bi := clickhouse.NewBatchInserter(conn, conf.BatchSize, time.Duration(conf.BatchFlushMs)*time.Millisecond)
 
-  server  := grpc.NewServer(bi)
+  kpResource := kafka.NewKafkaProducer(conf.KafkaBrokers, "resource")
+
+  kpFrequency := kafka.NewKafkaProducer(conf.KafkaBrokers, "frequency")
+
+  p := processor.NewProcessor(kpResource , kpFrequency )
+
+  server  := grpc.NewServer(bi,p)
 
   grpcServer := grpc.NewGrpcServer(server)
 
@@ -67,6 +75,10 @@ func main() {
 		sig := <-sigCh
 		logger.Info("Received termination signal, initiating graceful shutdown", zap.String("signal", sig.String()))
 		grpcServer.Stop()
+    p.Stop()
+    kpResource.Close()
+    kpFrequency.Close()
+    bi.Stop()
 		cancel()
 	}()
 

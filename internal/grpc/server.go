@@ -1,9 +1,11 @@
 package grpc
 
 import (
+	"context"
 	"ebpf_server/internal/clickhouse"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/internal/metrics"
+	"ebpf_server/internal/processor"
 	"ebpf_server/pkg/logutil"
 	"io"
 
@@ -14,10 +16,14 @@ import (
 type Server struct {
 	pb.UnimplementedEventCollectorServer
   bi *clickhouse.BatchInserter
+  p *processor.Processor
 }
 
-func NewServer(bi *clickhouse.BatchInserter) *Server{
-  return &Server{bi: bi}
+func NewServer(bi *clickhouse.BatchInserter, p *processor.Processor) *Server{
+  return &Server{
+    bi: bi,
+    p: p,
+  }
 }
 
 func NewGrpcServer(server *Server) *grpc.Server{
@@ -56,3 +62,18 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 	}
 }
 
+
+func (s *Server) SendBatch(ctx context.Context,in *pb.Batch) (*pb.CollectorAck,error){
+  logger:= logutil.GetLogger()
+  logger.Info("Received batch of events", zap.Int("count", len(in.Batch)))
+  
+  s.p.Submit(in)
+  for _, e := range in.Batch{
+    s.bi.Submit(e)
+  }
+
+  return &pb.CollectorAck{
+    Status: "Ok",
+    Message: "Batch processed successfully",
+  },nil
+}

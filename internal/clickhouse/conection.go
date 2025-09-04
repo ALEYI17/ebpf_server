@@ -504,6 +504,73 @@ func (ch *Chconnection) insertMountEvent(ctx context.Context,events []*pb.EbpfEv
   return batch.Send()
 }
 
+func (ch *Chconnection) insertResourceEvent(ctx context.Context,events []*pb.EbpfEvent) error{
+  logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+	INSERT INTO audit.resource_events (
+		pid, comm, uid, gid, ppid, user_pid, user_ppid, cgroup_id, cgroup_name, user,
+		cpu_ns, user_faults, kernel_faults,
+		vm_mmap_bytes, vm_munmap_bytes,
+		vm_brk_grow_bytes, vm_brk_shrink_bytes,
+		bytes_written, bytes_read, isActive,
+		wall_time_dt, wall_time_ms,
+    container_id, container_image, container_labels_json
+	)
+  `)
+
+  if err != nil {
+    return fmt.Errorf("failed to prepare batch: %w", err)
+  }
+  for _, event := range events {
+		resourcePayload, ok := event.Payload.(*pb.EbpfEvent_Resource)
+		if !ok {
+			logger.Warn("Skipping event: unexpected payload type", zap.String("event_type", event.EventType))
+			continue
+		}
+		resource := resourcePayload.Resource
+    labelsJSON, _ := json.Marshal(event.ContainerLabelsJson)
+    wallTime := time.Unix(0, int64(event.TimestampUnixMs)*int64(time.Millisecond))
+
+		err := batch.Append(
+			event.Pid,
+			event.Comm,
+      event.Uid,
+      event.Gid,
+      event.Ppid,
+      event.UserPid,
+      event.UserPpid,
+      event.CgroupId,
+      event.CgroupName,
+      event.User,
+      resource.CpuNs,
+      resource.UserFaults,
+      resource.KernelFaults,
+      resource.VmMmapBytes,
+      resource.VmMunmapBytes,
+      resource.VmBrkGrowBytes,
+      resource.VmBrkShrinkBytes,
+      resource.BytesWritten,
+      resource.BytesRead,
+      resource.IsActive,
+      wallTime,
+      event.TimestampUnixMs,
+
+      event.ContainerId,
+			event.ContainerImage,
+			string(labelsJSON),
+		)
+		if err != nil {
+			logger.Error("Failed to append ptrace row", zap.Error(err))
+			return err
+		}
+	}
+  
+  return batch.Send()
+}
+
+
+
 func escapeSQLString(s string) string {
 	return strings.ReplaceAll(s, "'", "''") // escape single quotes
 }
