@@ -3,8 +3,9 @@ package kafka
 import (
 	"context"
 	"ebpf_server/internal/grpc/pb"
-  "google.golang.org/protobuf/proto"
+
 	"github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
 )
 
 type KafkaProducer struct{
@@ -23,18 +24,23 @@ func NewKafkaProducer(brokers []string, topic string) *KafkaProducer{
 	}
 }
 
-func (kp *KafkaProducer) Send(ctx context.Context,event *pb.EbpfEvent) error{
+func (kp *KafkaProducer) Send(ctx context.Context,event *pb.Batch) error{
 
-  data,err := proto.Marshal(event)
-  if err !=nil{
-    return err
+  msgs := make([]kafka.Message, 0, len(event.Batch))
+
+  for _, ev := range event.Batch{
+    data,err := proto.Marshal(ev)
+    if err !=nil{
+      return err
+    }
+
+    msgs = append(msgs, kafka.Message{
+      Value: data,
+    })
   }
-
-  err = kp.writer.WriteMessages(ctx, kafka.Message{
-    Value: data,
-  })
-
-  return err
+  
+  
+  return kp.writer.WriteMessages(ctx, msgs...)
 }
 
 func (kp *KafkaProducer) Close() error {

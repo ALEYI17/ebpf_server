@@ -5,6 +5,7 @@ import (
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/internal/kafka"
 	"ebpf_server/pkg/logutil"
+	"ebpf_server/pkg/programs"
 
 	"go.uber.org/zap"
 )
@@ -12,8 +13,8 @@ import (
 type Processor struct{
   kpResource *kafka.KafkaProducer
   kpFrequency *kafka.KafkaProducer
-  eventChanResource chan *pb.EbpfEvent
-  eventChanFreq chan *pb.EbpfEvent
+  eventChanResource chan *pb.Batch
+  eventChanFreq chan *pb.Batch
   stopCh chan struct{}
 }
 
@@ -22,8 +23,8 @@ func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProdu
   processor := &Processor{
     kpResource: kpResource,
     kpFrequency: kpFrequency,
-    eventChanResource: make(chan *pb.EbpfEvent,1000),
-    eventChanFreq: make(chan *pb.EbpfEvent,1000),
+    eventChanResource: make(chan *pb.Batch,1000),
+    eventChanFreq: make(chan *pb.Batch,1000),
     stopCh: make(chan struct{}),
   }
 
@@ -55,20 +56,20 @@ func (p *Processor) run(){
   }
 }
 
-func (p *Processor) Submit(event *pb.EbpfEvent){
+func (p *Processor) Submit(event *pb.Batch){
   
-  switch event.Payload.(type){
-    case *pb.EbpfEvent_SysFreq:
+  switch event.Type{
+    case programs.LoadSyscallFreq:
       select{
         case p.eventChanFreq <- event:
         default:
-          logutil.GetLogger().Warn("dropped freq event: channel full", zap.String("comm", event.Comm))
+          logutil.GetLogger().Warn("dropped freq event: channel full" )
       }
-    case *pb.EbpfEvent_Resource:
+    case programs.LoadResource:
       select{
         case p.eventChanResource <- event:
         default:
-          logutil.GetLogger().Warn("dropped resource event: channel full", zap.String("comm", event.Comm))
+          logutil.GetLogger().Warn("dropped resource event: channel full")
       }
 
     default:

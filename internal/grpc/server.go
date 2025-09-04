@@ -59,8 +59,6 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
     metrics.GrpcEventsReceived.WithLabelValues(event.EventType).Inc()
     s.bi.Submit(event)
 
-    s.p.Submit(event)
-
 	}
 }
 
@@ -68,10 +66,10 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 func (s *Server) SendBatch(ctx context.Context,in *pb.Batch) (*pb.CollectorAck,error){
   logger:= logutil.GetLogger()
   logger.Info("Received batch of events", zap.Int("count", len(in.Batch)))
-
+  
+  s.p.Submit(in)
   for _, e := range in.Batch{
     s.bi.Submit(e)
-    s.p.Submit(e)
   }
 
   return &pb.CollectorAck{
