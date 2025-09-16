@@ -81,6 +81,7 @@ func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
   var mmapBatch []*pb.EbpfEvent
   var mountBatch []*pb.EbpfEvent
   var resourceBatch []*pb.EbpfEvent
+  var freqBatch []*pb.EbpfEvent
 
   for _,e := range events{
     switch e.Payload.(type){
@@ -96,6 +97,8 @@ func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
         mountBatch = append(mountBatch, e)
       case *pb.EbpfEvent_Resource:
         resourceBatch = append(resourceBatch, e)
+      case *pb.EbpfEvent_SyscallFreqAgg:
+        freqBatch = append(freqBatch, e)
       default:
         logutil.GetLogger().Warn("Unknown event payload type", zap.String("event_type", e.EventType))
     }
@@ -173,6 +176,19 @@ func (b *BatchInserter) sendBatch(events []*pb.EbpfEvent) {
   if len(resourceBatch)>0{
     start := time.Now()
     err := b.ch.insertResourceEvent(context.Background(),resourceBatch)
+    duration := time.Since(start).Seconds()
+    metrics.ClickhouseInsertLatency.WithLabelValues().Observe(duration)
+    if err !=nil{
+      metrics.ClickhouseInsertTotal.WithLabelValues("error").Inc()
+      logutil.GetLogger().Error("Failed to insert batch", zap.Error(err))
+    }else {
+      metrics.ClickhouseInsertTotal.WithLabelValues("success").Inc()
+    }
+  }
+
+  if len(freqBatch) >0 {
+    start := time.Now()
+    err := b.ch.insertSyacallFreq(context.Background(),freqBatch)
     duration := time.Since(start).Seconds()
     metrics.ClickhouseInsertLatency.WithLabelValues().Observe(duration)
     if err !=nil{
