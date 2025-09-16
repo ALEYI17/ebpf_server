@@ -206,3 +206,34 @@ CREATE TABLE IF NOT EXISTS audit.resource_events (
   
 ) ENGINE = MergeTree()
 ORDER BY wall_time_ms;
+
+CREATE TABLE IF NOT EXISTS audit.syscall_freq_events (
+  -- Common process / container metadata
+  pid UInt32,
+  comm String,
+
+  uid UInt32,
+  gid UInt32,
+  ppid UInt32,
+  user_pid UInt32,
+  user_ppid UInt32,
+  cgroup_id UInt64,
+  cgroup_name String,
+  user String,
+
+  -- Syscall aggregation
+  syscall_vector_json JSON,    -- e.g. {"0":12,"1":4,"60":9}
+  distinct_syscalls UInt32,    -- number of syscalls seen in this batch
+  total_syscalls UInt64,       -- sum of all counts in the vector
+
+  -- Timestamps
+  wall_time_dt DateTime64(3),
+  wall_time_ms Int64,
+  
+  -- Container metadata
+  container_id String,
+  container_image String,
+  container_labels_json JSON
+)
+ENGINE = MergeTree()
+ORDER BY wall_time_ms;
