@@ -58,7 +58,7 @@ func (s *Server) SendEvents(stream pb.EventCollector_SendEventsServer) error {
 
     metrics.GrpcEventsReceived.WithLabelValues(event.EventType).Inc()
     s.bi.Submit(event)
-
+    s.p.Submit_event(event)
 	}
 }
 
