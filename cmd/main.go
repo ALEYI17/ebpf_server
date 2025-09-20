@@ -61,7 +61,9 @@ func main() {
 
   kpFrequency := kafka.NewKafkaProducer(conf.KafkaBrokers, "frequency")
 
-  p := processor.NewProcessor(kpResource , kpFrequency )
+  kpStatic := kafka.NewKafkaProducer(conf.KafkaBrokers, "ebpf_events")
+
+  p := processor.NewProcessor(kpResource , kpFrequency , kpStatic, conf.BatchSize,time.Duration(conf.BatchFlushMs)*time.Millisecond)
 
   server  := grpc.NewServer(bi,p)
 

@@ -6,6 +6,7 @@ import (
 	"ebpf_server/internal/kafka"
 	"ebpf_server/pkg/logutil"
 	"ebpf_server/pkg/programs"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -13,18 +14,26 @@ import (
 type Processor struct{
   kpResource *kafka.KafkaProducer
   kpFrequency *kafka.KafkaProducer
+  kpStatic *kafka.KafkaProducer
   eventChanResource chan *pb.Batch
   eventChanFreq chan *pb.Batch
+  eventChanStatic chan *pb.EbpfEvent
+  batchSize     int
+  flushInterval time.Duration
   stopCh chan struct{}
 }
 
-func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer) *Processor{
+func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer,kpStatic *kafka.KafkaProducer, batchSize int , flushInterval time.Duration) *Processor{
 
   processor := &Processor{
     kpResource: kpResource,
     kpFrequency: kpFrequency,
+    kpStatic: kpStatic,
     eventChanResource: make(chan *pb.Batch,1000),
     eventChanFreq: make(chan *pb.Batch,1000),
+    eventChanStatic: make(chan *pb.EbpfEvent,1000),
+    batchSize: batchSize,
+    flushInterval: flushInterval,
     stopCh: make(chan struct{}),
   }
 
@@ -34,6 +43,10 @@ func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProdu
 }
 
 func (p *Processor) run(){
+
+  ticker := time.NewTicker(p.flushInterval)
+  defer ticker.Stop()
+  var staticBuffer []*pb.EbpfEvent
 
   for{
 
@@ -52,6 +65,15 @@ func (p *Processor) run(){
       if err !=nil {
         logutil.GetLogger().Error("failed to write to Kafka", zap.Error(err))
       }
+    case eves := <- p.eventChanStatic:
+      staticBuffer = append(staticBuffer, eves)
+      if len(staticBuffer) >= p.batchSize{
+        staticBuffer = p.flushStatic(staticBuffer)
+      }
+      
+    case <- ticker.C:
+      staticBuffer = p.flushStatic(staticBuffer)
+    
     }
   }
 }
@@ -75,6 +97,29 @@ func (p *Processor) Submit(event *pb.Batch){
     default:
       return
   }
+}
+
+func (p *Processor) Submit_event(event *pb.EbpfEvent){
+  
+  select{
+  case p.eventChanStatic <- event:
+  default:
+    logutil.GetLogger().Warn("dropped static analysis event: chan full")
+  }
+}
+
+func (p *Processor) flushStatic(staticBuffer []*pb.EbpfEvent) []*pb.EbpfEvent {
+    if len(staticBuffer) == 0 {
+        return staticBuffer
+    }
+    b := pb.Batch{
+        Type:  "static",
+        Batch: staticBuffer,
+    }
+    if err := p.kpStatic.Send(context.Background(), &b); err != nil {
+        logutil.GetLogger().Error("failed to write static batch to Kafka", zap.Error(err))
+    }
+    return nil // reset
 }
 
 func (p *Processor) Stop() {

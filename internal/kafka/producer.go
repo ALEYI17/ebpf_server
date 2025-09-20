@@ -43,6 +43,7 @@ func (kp *KafkaProducer) Send(ctx context.Context,event *pb.Batch) error{
   return kp.writer.WriteMessages(ctx, msgs...)
 }
 
+
 func (kp *KafkaProducer) Close() error {
 	return kp.writer.Close()
 }

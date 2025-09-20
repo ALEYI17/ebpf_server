@@ -223,8 +223,6 @@ CREATE TABLE IF NOT EXISTS audit.syscall_freq_events (
 
   -- Syscall aggregation
   syscall_vector_json JSON,    -- e.g. {"0":12,"1":4,"60":9}
-  distinct_syscalls UInt32,    -- number of syscalls seen in this batch
-  total_syscalls UInt64,       -- sum of all counts in the vector
 
   -- Timestamps
   wall_time_dt DateTime64(3),
