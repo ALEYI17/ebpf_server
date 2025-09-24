@@ -80,6 +80,7 @@ You can configure the server using environment variables:
 | `BATCH_MAX_SIZE` | Max number of events per insert batch    | `1000`           |
 | `BATCH_FLUSH_MS` | Max time (in ms) before flushing a batch | `10000`          |
 | `PROMETHEUS_PORT`  | Port to expose Prometheus metrics        | `9090`           |
+| `KAFKA_BROKERS`  | Address of Kafka broker        | `localhost:9092`           |
 
 Example:
 
@@ -91,6 +92,7 @@ export DB_PASSWORD=yourpassword
 export DB_NAME=audit
 export BATCH_MAX_SIZE=1000
 export BATCH_FLUSH_MS=5000
+export KAFKA_BROKERS=localhost:9092
 
 go run cmd/main.go
 ```
