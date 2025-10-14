@@ -9,11 +9,15 @@ The **eBPF Server** is a core component of the [InfraSight](https://github.com/A
 - ClickHouse ingestion using batching
 
 ## 🧱 Technologies Used and Dependencies
-- [Go](https://golang.org/) (>= 1.21)
-- [gRPC](https://grpc.io/)
-- [Protocol Buffers](https://protobuf.dev/)
-- [ClickHouse](https://clickhouse.com)
-- [clickhouse-go v2](https://github.com/ClickHouse/clickhouse-go)
+
+* [Go](https://golang.org/) (>= 1.21)
+* [gRPC](https://grpc.io/)
+* [Protocol Buffers](https://protobuf.dev/)
+* [ClickHouse](https://clickhouse.com)
+* [clickhouse-go v2](https://github.com/ClickHouse/clickhouse-go)
+* [Apache Kafka](https://kafka.apache.org/)
+* [segmentio/kafka-go](https://github.com/segmentio/kafka-go)
+
 
 ## 🚀 Getting Started
 ### 🐳 Build Docker Image
@@ -127,75 +131,18 @@ The server exposes Prometheus-compatible metrics at `/metrics` on port `:9090` b
 
 ## 🗃️ ClickHouse Schema
 
-Ensure your database has the following table:
+The ClickHouse database schema is automatically initialized using the SQL definitions located in:
 
-```sql
-CREATE TABLE IF NOT EXISTS audit.tracing_events (
-  pid UInt32,
-  uid UInt32,
-  gid UInt32,
-  ppid UInt32,
-  user_pid UInt32,
-  user_ppid UInt32,
-  cgroup_id UInt64,
-  cgroup_name String,
-  comm String,
-  filename String,
-  monotonic_ts_enter_ns UInt64,
-  monotonic_ts_exit_ns UInt64,
-  return_code Int64,
-  latency_ns UInt64,
-  event_type String,
-  node_name String,
-  user String,
-  latency_ms Float64, 
-  wall_time_ms Int64,
-  wall_time_dt DateTime64(3),
-  container_id String,
-  container_image String,
-  container_labels_json JSON
-
-)ENGINE = MergeTree()
-ORDER BY wall_time_ms;
-
-CREATE TABLE IF NOT EXISTS audit.network_events (
-  pid UInt32,
-  uid UInt32,
-  gid UInt32,
-  ppid UInt32,
-  user_pid UInt32,
-  user_ppid UInt32,
-  cgroup_id UInt64,
-  cgroup_name String,
-  comm String,
-  
-  sa_family String,               
-  saddr_ipv4 String,             
-  daddr_ipv4 String,             
-  sport String,                 
-  dport String,                 
-  saddr_ipv6 String,  
-  daddr_ipv6 String,
-  monotonic_ts_enter_ns UInt64,
-  monotonic_ts_exit_ns UInt64,
-  return_code Int64,
-  latency_ns UInt64,
-
-  event_type String,
-  node_name String,
-  user String,
-
-  latency_ms Float64, 
-  wall_time_ms Int64,
-  wall_time_dt DateTime64(3),
-
-  container_id String,
-  container_image String,
-  container_labels_json JSON
-) ENGINE = MergeTree()
-ORDER BY wall_time_ms;
 ```
-> ⚠️ Note: Can find the sql in the `./init/init.sql`
+./init/init.sql
+```
+
+You can also view the up-to-date schema and detailed explanations of each table in the official documentation:
+👉 [InfraSight Documentation Database Schema](https://aleyi17.github.io/InfraSight)
+
+> ⚠️ **Note:** The schema includes tables for both syscall tracing events and network events.
+> These are used by the `ebpf_server` to persist enriched telemetry data received over gRPC to Kafka and Clickhouse.
+
 
 ## 🔐 Security Note
 
