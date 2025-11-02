@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"ebpf_server/internal/clickhouse"
+	"ebpf_server/internal/grpc/gpupb"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/internal/metrics"
 	"ebpf_server/internal/processor"
@@ -15,13 +16,16 @@ import (
 
 type Server struct {
 	pb.UnimplementedEventCollectorServer
+  gpupb.UnimplementedGpuEventCollectorServer
   bi *clickhouse.BatchInserter
+  big *clickhouse.GpuBatchInserter
   p *processor.Processor
 }
 
-func NewServer(bi *clickhouse.BatchInserter, p *processor.Processor) *Server{
+func NewServer(bi *clickhouse.BatchInserter, big *clickhouse.GpuBatchInserter,p *processor.Processor) *Server{
   return &Server{
     bi: bi,
+    big: big,
     p: p,
   }
 }
@@ -30,6 +34,7 @@ func NewGrpcServer(server *Server) *grpc.Server{
   grpcserver := grpc.NewServer()
   
   pb.RegisterEventCollectorServer(grpcserver, server)
+  gpupb.RegisterGpuEventCollectorServer(grpcserver, server)
 
   return grpcserver
 }
@@ -73,6 +78,19 @@ func (s *Server) SendBatch(ctx context.Context,in *pb.Batch) (*pb.CollectorAck,e
   }
 
   return &pb.CollectorAck{
+    Status: "Ok",
+    Message: "Batch processed successfully",
+  },nil
+}
+
+func(s *Server) SendGpuBatch(ctx context.Context, in *gpupb.GpuBatch) (*gpupb.CollectorAck, error){
+  logger := logutil.GetLogger()
+  logger.Info("Received Gpu batch of events", zap.Int("count", len(in.Batch)))
+
+  for _,e := range in.Batch{
+    s.big.Submit(e)
+  }
+  return &gpupb.CollectorAck{
     Status: "Ok",
     Message: "Batch processed successfully",
   },nil

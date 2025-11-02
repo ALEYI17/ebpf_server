@@ -235,3 +235,89 @@ CREATE TABLE IF NOT EXISTS audit.syscall_freq_events (
 )
 ENGINE = MergeTree()
 ORDER BY wall_time_ms;
+
+CREATE TABLE IF NOT EXISTS audit.gpu_time_window_events (
+  pid UInt32,
+  comm String,
+
+  uid UInt32,
+  gid UInt32,
+  ppid UInt32,
+  user_pid UInt32,
+  user_ppid UInt32,
+  cgroup_id UInt64,
+  cgroup_name String,
+  user String,
+
+  -- GPU window metrics
+  window_start_ns Int64,
+  window_end_ns Int64,
+
+  kernel_launch_count UInt64,
+  mem_alloc_count UInt64,
+  memcpy_count UInt64,
+  stream_sync_count UInt64,
+
+  avg_threads_per_kernel Float64,
+  max_threads_per_kernel UInt64,
+  avg_blocks_per_kernel Float64,
+  total_threads_launched UInt64,
+
+  total_mem_alloc_bytes UInt64,
+  avg_mem_alloc_bytes Float64,
+  total_memcpy_bytes UInt64,
+  avg_memcpy_bytes Float64,
+  htod_bytes UInt64,
+  dtoh_bytes UInt64,
+  htod_ratio Float64,
+
+  avg_sync_time_ns Float64,
+  max_sync_time_ns UInt64,
+  sync_fraction Float64,
+
+  launch_rate Float64,
+  memcpy_rate Float64,
+  alloc_rate Float64,
+
+  -- Timestamp and container metadata
+  wall_time_dt DateTime64(3),
+  wall_time_ms Int64,
+
+  container_id String,
+  container_image String,
+  container_labels_json JSON
+)
+ENGINE = MergeTree()
+ORDER BY wall_time_ms;
+
+CREATE TABLE IF NOT EXISTS audit.gpu_event_tokens (
+  -- Common process / container metadata
+  pid UInt32,
+  comm String,
+
+  uid UInt32,
+  gid UInt32,
+  ppid UInt32,
+  user_pid UInt32,
+  user_ppid UInt32,
+  cgroup_id UInt64,
+  cgroup_name String,
+  user String,
+
+  -- GPU event data
+  timestamp Int64,
+  event_type String,     -- EVENT_KERNEL_LAUNCH, EVENT_MEMALLOC, etc.
+  value Float64,
+  dir Int64,             -- direction (for memcpy, etc.)
+
+  -- Timestamp and container metadata
+  wall_time_dt DateTime64(3),
+  wall_time_ms Int64,
+
+  container_id String,
+  container_image String,
+  container_labels_json JSON
+)
+ENGINE = MergeTree()
+ORDER BY wall_time_ms;
+
