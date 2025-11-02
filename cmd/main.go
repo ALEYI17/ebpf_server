@@ -56,6 +56,7 @@ func main() {
   }
 
   bi := clickhouse.NewBatchInserter(conn, conf.BatchSize, time.Duration(conf.BatchFlushMs)*time.Millisecond)
+  big := clickhouse.NewgPUBatchInserter(conn, conf.BatchSize,time.Duration(conf.BatchFlushMs)*time.Millisecond )
 
   kpResource := kafka.NewKafkaProducer(conf.KafkaBrokers, "resource")
 
@@ -65,7 +66,7 @@ func main() {
 
   p := processor.NewProcessor(kpResource , kpFrequency , kpStatic, conf.BatchSize,time.Duration(conf.BatchFlushMs)*time.Millisecond)
 
-  server  := grpc.NewServer(bi,p)
+  server  := grpc.NewServer(bi,big,p)
 
   grpcServer := grpc.NewGrpcServer(server)
 

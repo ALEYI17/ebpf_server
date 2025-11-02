@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"ebpf_server/internal/config"
+	"ebpf_server/internal/grpc/gpupb"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/pkg/logutil"
 	"encoding/json"
@@ -138,6 +139,41 @@ func (ch *Chconnection) InsertBatchTraceEvent(ctx context.Context,events []*pb.E
 
   if len(networkEvent) > 0 {
     if err := ch.insertNetworkEvent(ctx, snoopEvents); err !=nil{
+      errors = append(errors, err)
+    }
+  }
+
+  if len(errors) >0{
+    return errors
+  }
+
+  return nil
+}
+
+func (ch *Chconnection) InsertBatchGpuEvent(ctx context.Context,events []*gpupb.GpuEvent) []error{
+
+  var tokenBatch []*gpupb.GpuEvent
+  var twBatch []*gpupb.GpuEvent
+  var errors []error
+  for _,e := range events{
+    switch e.Payload.(type){
+      case *gpupb.GpuEvent_Token:
+        tokenBatch = append(tokenBatch, e)
+      case *gpupb.GpuEvent_Tw:
+        twBatch = append(twBatch, e)
+      default:
+        continue
+    }
+  }
+
+  if len(tokenBatch)>0 {
+    if err := ch.insertGpuTokenEvents(ctx, tokenBatch); err !=nil{
+      errors = append(errors, err)
+    }
+  }
+
+  if len(twBatch) > 0 {
+    if err := ch.insertGpuTimeWindowEvents(ctx, twBatch); err !=nil{
       errors = append(errors, err)
     }
   }
@@ -620,6 +656,117 @@ func (ch *Chconnection) insertSyacallFreq(ctx context.Context,events []*pb.EbpfE
 	}
   
   return batch.Send()
+}
+
+func (ch *Chconnection) insertGpuTokenEvents(ctx context.Context, events []*gpupb.GpuEvent) error {
+	logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+		INSERT INTO audit.gpu_event_tokens (
+			pid, comm,
+			event_type, timestamp, value, dir,
+			wall_time_dt, wall_time_ms
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare GPU token batch: %w", err)
+	}
+
+	for _, event := range events {
+		tokenPayload, ok := event.Payload.(*gpupb.GpuEvent_Token)
+		if !ok {
+			logger.Warn("Skipping GPU event: not a token", zap.String("event_type", event.EventType))
+			continue
+		}
+		token := tokenPayload.Token
+
+		wallTime := time.Unix(0, int64(token.Timestamp)*int64(time.Nanosecond))
+
+		err := batch.Append(
+			event.Pid,
+			event.Comm,
+			token.EventType.String(),
+			token.Timestamp,
+			token.Value,
+			token.Dir,
+			wallTime,
+			token.Timestamp/1_000_000, // convert ns → ms
+		)
+		if err != nil {
+			logger.Error("Failed to append GPU token event", zap.Error(err))
+			return err
+		}
+	}
+
+	return batch.Send()
+}
+
+func (ch *Chconnection) insertGpuTimeWindowEvents(ctx context.Context, events []*gpupb.GpuEvent) error {
+	logger := logutil.GetLogger()
+
+	batch, err := ch.conn.PrepareBatch(ctx, `
+		INSERT INTO audit.gpu_time_window_events (
+			pid, comm,
+			window_start_ns, window_end_ns,
+			kernel_launch_count, mem_alloc_count, memcpy_count, stream_sync_count,
+			avg_threads_per_kernel, max_threads_per_kernel, avg_blocks_per_kernel, total_threads_launched,
+			total_mem_alloc_bytes, avg_mem_alloc_bytes, total_memcpy_bytes, avg_memcpy_bytes,
+			htod_bytes, dtoh_bytes, htod_ratio,
+			avg_sync_time_ns, max_sync_time_ns, sync_fraction,
+			launch_rate, memcpy_rate, alloc_rate,
+			wall_time_dt, wall_time_ms
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare GPU time window batch: %w", err)
+	}
+
+	for _, event := range events {
+		twPayload, ok := event.Payload.(*gpupb.GpuEvent_Tw)
+		if !ok {
+			logger.Warn("Skipping GPU event: not a time window", zap.String("event_type", event.EventType))
+			continue
+		}
+		tw := twPayload.Tw
+
+		wallTime := time.Unix(0, tw.WindowEndNs) // use end as wall time
+
+		err := batch.Append(
+			event.Pid,
+			event.Comm,
+			tw.WindowStartNs,
+			tw.WindowEndNs,
+			tw.KernelLaunchCount,
+			tw.MemAllocCount,
+			tw.MemcpyCount,
+			tw.StreamSyncCount,
+			tw.AvgThreadsPerKernel,
+			tw.MaxThreadsPerKernel,
+			tw.AvgBlocksPerKernel,
+			tw.TotalThreadsLaunched,
+			tw.TotalMemAllocBytes,
+			tw.AvgMemAllocBytes,
+			tw.TotalMemcpyBytes,
+			tw.AvgMemcpyBytes,
+			tw.HtodBytes,
+			tw.DtohBytes,
+			tw.HtodRatio,
+			tw.AvgSyncTimeNs,
+			tw.MaxSyncTimeNs,
+			tw.SyncFraction,
+			tw.LaunchRate,
+			tw.MemcpyRate,
+			tw.AllocRate,
+			wallTime,
+			tw.WindowEndNs/1_000_000,
+		)
+		if err != nil {
+			logger.Error("Failed to append GPU time window event", zap.Error(err))
+			return err
+		}
+	}
+
+	return batch.Send()
 }
 
 

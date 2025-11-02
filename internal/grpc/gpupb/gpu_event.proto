@@ -1,0 +1,75 @@
+syntax= "proto3";
+
+package gpupb;
+
+option go_package = "ebpf_loader/internal/grpc/gpupb;gpupb";
+
+message GpuEvent{
+  uint32 pid = 1;
+  string comm = 2;
+  string event_type = 3;
+  oneof payload {
+    GpuEventToken token = 4;
+    GpuTimeWindow tw = 5;
+  }
+}
+
+enum GpuEventType {
+  EVENT_UNKNOWN = 0;
+  EVENT_KERNEL_LAUNCH = 1;
+  EVENT_MEMALLOC = 2;
+  EVENT_MEMCPY = 3;
+  EVENT_STREAM_SYNC = 4;
+}
+
+message GpuEventToken {
+  int64 timestamp = 1;
+  GpuEventType event_type = 2;
+  double value = 3;
+  int64 dir = 4;        
+}
+
+message GpuTimeWindow {
+  int64 window_start_ns = 1;
+  int64 window_end_ns = 2;
+
+  uint64 kernel_launch_count = 3;
+  uint64 mem_alloc_count = 4;
+  uint64 memcpy_count = 5;
+  uint64 stream_sync_count = 6;
+
+  double avg_threads_per_kernel = 7;
+  uint64 max_threads_per_kernel = 8;
+  double avg_blocks_per_kernel = 9;
+  uint64 total_threads_launched = 10;
+
+  uint64 total_mem_alloc_bytes = 11;
+  double avg_mem_alloc_bytes = 12;
+  uint64 total_memcpy_bytes = 13;
+  double avg_memcpy_bytes = 14;
+  uint64 htod_bytes = 15;
+  uint64 dtoh_bytes = 16;
+  double htod_ratio = 17;
+
+  double avg_sync_time_ns = 18;
+  uint64 max_sync_time_ns = 19;
+  double sync_fraction = 20;
+
+  double launch_rate = 21;
+  double memcpy_rate = 22;
+  double alloc_rate = 23;
+}
+
+message CollectorAck {
+  string status = 68;
+  string message = 69;
+}
+
+message GpuBatch{
+  string type = 10;
+  repeated GpuEvent batch = 11;
+}
+
+service GpuEventCollector{
+  rpc SendGpuBatch(GpuBatch) returns (CollectorAck);
+}
