@@ -31,7 +31,7 @@ func NewServer(bi *clickhouse.BatchInserter, big *clickhouse.GpuBatchInserter,p 
 }
 
 func NewGrpcServer(server *Server) *grpc.Server{
-  grpcserver := grpc.NewServer()
+  grpcserver := grpc.NewServer(grpc.MaxRecvMsgSize(64*1024*1024), grpc.MaxSendMsgSize(64*1024*1024))
   
   pb.RegisterEventCollectorServer(grpcserver, server)
   gpupb.RegisterGpuEventCollectorServer(grpcserver, server)
