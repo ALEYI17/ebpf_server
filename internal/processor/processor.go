@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"ebpf_server/internal/grpc/gpupb"
 	"ebpf_server/internal/grpc/pb"
 	"ebpf_server/internal/kafka"
 	"ebpf_server/pkg/logutil"
@@ -15,23 +16,27 @@ type Processor struct{
   kpResource *kafka.KafkaProducer
   kpFrequency *kafka.KafkaProducer
   kpStatic *kafka.KafkaProducer
+  kpGpu   *kafka.KafkaProducer
   eventChanResource chan *pb.Batch
   eventChanFreq chan *pb.Batch
   eventChanStatic chan *pb.EbpfEvent
+  eventChanGpu chan *gpupb.GpuBatch
   batchSize     int
   flushInterval time.Duration
   stopCh chan struct{}
 }
 
-func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer,kpStatic *kafka.KafkaProducer, batchSize int , flushInterval time.Duration) *Processor{
+func NewProcessor (kpResource *kafka.KafkaProducer,kpFrequency *kafka.KafkaProducer,kpStatic *kafka.KafkaProducer,kpgpu *kafka.KafkaProducer ,batchSize int , flushInterval time.Duration) *Processor{
 
   processor := &Processor{
     kpResource: kpResource,
     kpFrequency: kpFrequency,
     kpStatic: kpStatic,
+    kpGpu: kpgpu,
     eventChanResource: make(chan *pb.Batch,1000),
     eventChanFreq: make(chan *pb.Batch,1000),
     eventChanStatic: make(chan *pb.EbpfEvent,1000),
+    eventChanGpu: make(chan *gpupb.GpuBatch,1000),
     batchSize: batchSize,
     flushInterval: flushInterval,
     stopCh: make(chan struct{}),
@@ -71,6 +76,11 @@ func (p *Processor) run(){
         staticBuffer = p.flushStatic(staticBuffer)
       }
       
+    case eveg := <- p.eventChanGpu:
+      err := p.kpGpu.SendGpu(context.Background(), eveg)
+      if err !=nil {
+        logutil.GetLogger().Error("failed to write to Kafka", zap.Error(err))
+      }
     case <- ticker.C:
       staticBuffer = p.flushStatic(staticBuffer)
     
@@ -105,6 +115,15 @@ func (p *Processor) Submit_event(event *pb.EbpfEvent){
   case p.eventChanStatic <- event:
   default:
     logutil.GetLogger().Warn("dropped static analysis event: chan full")
+  }
+}
+
+func (p *Processor) Submit_gpu(batch *gpupb.GpuBatch){
+
+  select{
+  case p.eventChanGpu <- batch:
+  default:
+    logutil.GetLogger().Warn("dropped gpu event: chan full")
   }
 }
 
