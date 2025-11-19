@@ -55,16 +55,16 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
 
-  # kafka-ui:
-  #   image: provectuslabs/kafka-ui:latest
-  #   container_name: kafka-ui
-  #   ports:
-  #     - "8070:8080"
-  #   environment:
-  #     KAFKA_CLUSTERS_0_NAME: local
-  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
-  #   depends_on:
-  #     - broker
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8070:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+    depends_on:
+      - broker
   #
   init-kafka:
     image: confluentinc/cp-kafka:latest
@@ -80,6 +80,7 @@ services:
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic resource --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic frequency --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic ebpf_events --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic gpu_fingerprint --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka:29092 --list

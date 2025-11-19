@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"ebpf_server/internal/grpc/gpupb"
 	"ebpf_server/internal/grpc/pb"
 
 	"github.com/segmentio/kafka-go"
@@ -37,6 +38,34 @@ func (kp *KafkaProducer) Send(ctx context.Context,event *pb.Batch) error{
     msgs = append(msgs, kafka.Message{
       Value: data,
     })
+  }
+  
+  
+  return kp.writer.WriteMessages(ctx, msgs...)
+}
+
+func (kp *KafkaProducer) SendGpu(ctx context.Context,event *gpupb.GpuBatch) error{
+
+  msgs := make([]kafka.Message, 0, len(event.Batch))
+
+  for _, ev := range event.Batch{
+    
+    switch ev.Payload.(type){
+      case *gpupb.GpuEvent_Token:
+        continue
+      case *gpupb.GpuEvent_Tw:
+        data,err := proto.Marshal(ev)
+        if err !=nil{
+          return err
+        }
+
+        msgs = append(msgs, kafka.Message{
+          Value: data,
+        })
+      default:
+        continue
+    }
+    
   }
   
   

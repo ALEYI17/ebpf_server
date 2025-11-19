@@ -86,7 +86,8 @@ func (s *Server) SendBatch(ctx context.Context,in *pb.Batch) (*pb.CollectorAck,e
 func(s *Server) SendGpuBatch(ctx context.Context, in *gpupb.GpuBatch) (*gpupb.CollectorAck, error){
   logger := logutil.GetLogger()
   logger.Info("Received Gpu batch of events", zap.Int("count", len(in.Batch)))
-
+  
+  s.p.Submit_gpu(in)
   for _,e := range in.Batch{
     s.big.Submit(e)
   }
